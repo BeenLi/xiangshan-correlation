@@ -33,7 +33,6 @@
   f(stvec      , 0x105) f(scounteren , 0x106) \
   f(sscratch   , 0x140) f(sepc       , 0x141) f(scause     , 0x142) \
   f(stval      , 0x143) \
-  f(senvcfg    , 0x10a) \
   f(satp       , 0x180)
 
 #define NOP \
