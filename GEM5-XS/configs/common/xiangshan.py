@@ -183,6 +183,10 @@ def config_xiangshan_inputs(args: argparse.Namespace, sys):
         print("Simulating single core without RVV, demanding GCPT restorer size of 0x700.")
         sys.gcpt_restorer_size_limit = 0x700
 
+    if args.gcpt_restorer_size_limit is not None:
+        print("Overriding GCPT restorer size limit to %#x." % args.gcpt_restorer_size_limit)
+        sys.gcpt_restorer_size_limit = args.gcpt_restorer_size_limit
+
     # configure gcpt input
     if args.generic_rv_cpt is not None:
         assert(buildEnv['TARGET_ISA'] == "riscv")

@@ -655,6 +655,11 @@ def addXiangshanFSOptions(parser):
     parser.add_argument("--gcpt-restorer", action="store", type = str,
                       default=None,
                       help="The path of generic risc-v checkpoint restorer")
+    parser.add_argument("--gcpt-restorer-size-limit", action="store",
+                        type=lambda x: int(x, 0), default=None,
+                        help="Override how many bytes of --gcpt-restorer/$GCB_RESTORER "
+                             "are copied over the checkpoint (default: 0x700 for "
+                             "scalar single-core checkpoints)")
 
     parser.add_argument("--raw-cpt", action= "store_true",
                         help = "The checkpoint file is not gz but binary")
