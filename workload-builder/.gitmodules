@@ -1,0 +1,30 @@
+[submodule "sbi/opensbi"]
+	path = bootloader/opensbi
+	url = https://github.com/riscv-software-src/opensbi
+[submodule "workloads/linux/rvv-bench/source"]
+	path = workloads/linux/rvv-bench/source
+	url = https://github.com/camel-cdr/rvv-bench
+[submodule "bootloader/LibCheckpointAlpha"]
+	path = bootloader/LibCheckpointAlpha
+	url = https://github.com/openxiangshan/LibCheckpointAlpha
+[submodule "workloads/am/riscv-tests/source"]
+	path = workloads/am/riscv-tests/source
+	url = https://github.com/OpenXiangShan/riscv-tests
+[submodule "nexus-am"]
+	path = nexus-am
+	url = https://github.com/OpenXiangShan/nexus-am/
+[submodule "workloads/am/riscv-vector-tests/source"]
+	path = workloads/am/riscv-vector-tests/source
+	url = https://github.com/OpenXiangShan/riscv-vector-tests
+[submodule "workloads/linux/kvmtool/source/kvmtool"]
+	path = workloads/linux/kvmtool/source/kvmtool
+	url = https://github.com/kvmtool/kvmtool
+[submodule "workloads/linux/kvmtool/source/dtc"]
+	path = workloads/linux/kvmtool/source/dtc
+	url = https://git.kernel.org/pub/scm/utils/dtc/dtc.git
+[submodule "workloads/linux/gapbs/source"]
+	path = workloads/linux/gapbs/source
+	url = https://github.com/sbeamer/gapbs.git
+[submodule "bootloader/LibCheckpoint"]
+	path = bootloader/LibCheckpoint
+	url = https://github.com/OpenXiangShan/LibCheckpoint.git

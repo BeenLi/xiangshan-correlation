@@ -1,0 +1,224 @@
+# 各组件导入时的上游版本，由迁移脚本在 2026-10-16 根据原 git 仓库生成。
+# 格式：路径  远端  分支  提交。嵌套子模块列在所属组件下面，路径相对于仓库根目录。
+# GEM5-XS 与 LibCheckpointAlpha-gem5-kmhv2 的基线提交见 kmhv2-baseline 标签，本地改动在其后的提交中。
+
+GEM5-XS  git@github.com:BeenLi/GEM5-XS.git  kmhv2-align  5b9124ed728203f643c3a3846ef0315d2caa69ee
+
+GEM5-XS/ext/dramsim3/DRAMsim3  https://github.com/umd-memsys/DRAMsim3.git  master  29817593b3389f1337235d63cac515024ab8fd6e
+  GEM5-XS/ext/dramsim3/DRAMsim3/ext/SuperLU_MT_3.1  68739c5a23cc48c9a13d28793834e4fee95d33ee  (未初始化，未导入)
+
+XiangShan  git@github.com:BeenLi/XiangShan.git  kunminghu-v2  f86f50b834c26597426b5ede7c25afaff84d11ce
+  XiangShan/ChiselAIA  c8be865e4fa60d40831ff29e0a30d4269f5ff5b9
+  XiangShan/ChiselAIA/Utility  b943a200635b6e0b06e96517aa086f4bf754c10d
+  XiangShan/ChiselAIA/Utility/rocket-chip  dc2d83f5511232a228e3cb90a3aeba474d8ee702
+  XiangShan/ChiselAIA/Utility/rocket-chip/cde  52768c97a27b254c0cc0ac9401feb55b29e18c28
+  XiangShan/ChiselAIA/Utility/rocket-chip/hardfloat  d93aa570806013dea479a92ba9bb33d1f2d4f69f
+  XiangShan/ChiselAIA/Utility/rocket-chip/hardfloat/berkeley-softfloat-3  5c06db33fc1e2130f67c045327b0ec949032df1d
+  XiangShan/ChiselAIA/Utility/rocket-chip/hardfloat/berkeley-testfloat-3  06b20075dd3c1a5d0dd007a93643282832221612
+  XiangShan/ChiselAIA/Utility/rocket-chip/torture  99d8b2b441ecaa18b852505bb7718ee04e2753f5
+  XiangShan/ChiselAIA/Utility/rocket-chip/torture/env  ce70afbf50a203be04bc326326cfa75831fe7f5d
+  XiangShan/ChiselAIA/rocket-chip  dc2d83f5511232a228e3cb90a3aeba474d8ee702
+  XiangShan/ChiselAIA/rocket-chip/cde  52768c97a27b254c0cc0ac9401feb55b29e18c28
+  XiangShan/ChiselAIA/rocket-chip/hardfloat  d93aa570806013dea479a92ba9bb33d1f2d4f69f
+  XiangShan/ChiselAIA/rocket-chip/hardfloat/berkeley-softfloat-3  5c06db33fc1e2130f67c045327b0ec949032df1d
+  XiangShan/ChiselAIA/rocket-chip/hardfloat/berkeley-testfloat-3  06b20075dd3c1a5d0dd007a93643282832221612
+  XiangShan/ChiselAIA/rocket-chip/torture  99d8b2b441ecaa18b852505bb7718ee04e2753f5
+  XiangShan/ChiselAIA/rocket-chip/torture/env  ce70afbf50a203be04bc326326cfa75831fe7f5d
+  XiangShan/ChiselIOPMP  09def1a7efa4707a74b7f31fe0a1c254b0940b78
+  XiangShan/ChiselIOPMP/rocket-chip  46f1efefa1ff431bffe3262e4830bc50316842f4
+  XiangShan/ChiselIOPMP/rocket-chip/cde  52768c97a27b254c0cc0ac9401feb55b29e18c28
+  XiangShan/ChiselIOPMP/rocket-chip/hardfloat  d93aa570806013dea479a92ba9bb33d1f2d4f69f
+  XiangShan/ChiselIOPMP/rocket-chip/hardfloat/berkeley-softfloat-3  5c06db33fc1e2130f67c045327b0ec949032df1d
+  XiangShan/ChiselIOPMP/rocket-chip/hardfloat/berkeley-testfloat-3  06b20075dd3c1a5d0dd007a93643282832221612
+  XiangShan/ChiselIOPMP/rocket-chip/torture  99d8b2b441ecaa18b852505bb7718ee04e2753f5
+  XiangShan/ChiselIOPMP/rocket-chip/torture/env  ce70afbf50a203be04bc326326cfa75831fe7f5d
+  XiangShan/ChiselIOPMP/utility  b51bd326daf46826df19b743794a021c05360461
+  XiangShan/ChiselIOPMP/utility/rocket-chip  46f1efefa1ff431bffe3262e4830bc50316842f4
+  XiangShan/ChiselIOPMP/utility/rocket-chip/cde  52768c97a27b254c0cc0ac9401feb55b29e18c28
+  XiangShan/ChiselIOPMP/utility/rocket-chip/hardfloat  d93aa570806013dea479a92ba9bb33d1f2d4f69f
+  XiangShan/ChiselIOPMP/utility/rocket-chip/hardfloat/berkeley-softfloat-3  5c06db33fc1e2130f67c045327b0ec949032df1d
+  XiangShan/ChiselIOPMP/utility/rocket-chip/hardfloat/berkeley-testfloat-3  06b20075dd3c1a5d0dd007a93643282832221612
+  XiangShan/ChiselIOPMP/utility/rocket-chip/torture  99d8b2b441ecaa18b852505bb7718ee04e2753f5
+  XiangShan/ChiselIOPMP/utility/rocket-chip/torture/env  ce70afbf50a203be04bc326326cfa75831fe7f5d
+  XiangShan/coupledL2  55d8e69c690690dbc786e9ca2f3839a95555df95
+  XiangShan/coupledL2/HuanCun  65ef077373ecf398b4cecdea06b65ef9b8d79044
+  XiangShan/coupledL2/HuanCun/Utility  c8d424348b0a058753116558c3d7066dba375f17
+  XiangShan/coupledL2/HuanCun/Utility/rocket-chip  46f1efefa1ff431bffe3262e4830bc50316842f4
+  XiangShan/coupledL2/HuanCun/Utility/rocket-chip/cde  52768c97a27b254c0cc0ac9401feb55b29e18c28
+  XiangShan/coupledL2/HuanCun/Utility/rocket-chip/hardfloat  d93aa570806013dea479a92ba9bb33d1f2d4f69f
+  XiangShan/coupledL2/HuanCun/Utility/rocket-chip/hardfloat/berkeley-softfloat-3  5c06db33fc1e2130f67c045327b0ec949032df1d
+  XiangShan/coupledL2/HuanCun/Utility/rocket-chip/hardfloat/berkeley-testfloat-3  06b20075dd3c1a5d0dd007a93643282832221612
+  XiangShan/coupledL2/HuanCun/Utility/rocket-chip/torture  99d8b2b441ecaa18b852505bb7718ee04e2753f5
+  XiangShan/coupledL2/HuanCun/Utility/rocket-chip/torture/env  ce70afbf50a203be04bc326326cfa75831fe7f5d
+  XiangShan/coupledL2/HuanCun/rocket-chip  46f1efefa1ff431bffe3262e4830bc50316842f4
+  XiangShan/coupledL2/HuanCun/rocket-chip/cde  52768c97a27b254c0cc0ac9401feb55b29e18c28
+  XiangShan/coupledL2/HuanCun/rocket-chip/hardfloat  d93aa570806013dea479a92ba9bb33d1f2d4f69f
+  XiangShan/coupledL2/HuanCun/rocket-chip/hardfloat/berkeley-softfloat-3  5c06db33fc1e2130f67c045327b0ec949032df1d
+  XiangShan/coupledL2/HuanCun/rocket-chip/hardfloat/berkeley-testfloat-3  06b20075dd3c1a5d0dd007a93643282832221612
+  XiangShan/coupledL2/HuanCun/rocket-chip/torture  99d8b2b441ecaa18b852505bb7718ee04e2753f5
+  XiangShan/coupledL2/HuanCun/rocket-chip/torture/env  ce70afbf50a203be04bc326326cfa75831fe7f5d
+  XiangShan/coupledL2/rocket-chip  46f1efefa1ff431bffe3262e4830bc50316842f4
+  XiangShan/coupledL2/rocket-chip/cde  52768c97a27b254c0cc0ac9401feb55b29e18c28
+  XiangShan/coupledL2/rocket-chip/hardfloat  d93aa570806013dea479a92ba9bb33d1f2d4f69f
+  XiangShan/coupledL2/rocket-chip/hardfloat/berkeley-softfloat-3  5c06db33fc1e2130f67c045327b0ec949032df1d
+  XiangShan/coupledL2/rocket-chip/hardfloat/berkeley-testfloat-3  06b20075dd3c1a5d0dd007a93643282832221612
+  XiangShan/coupledL2/rocket-chip/torture  99d8b2b441ecaa18b852505bb7718ee04e2753f5
+  XiangShan/coupledL2/rocket-chip/torture/env  ce70afbf50a203be04bc326326cfa75831fe7f5d
+  XiangShan/coupledL2/utility  f6932e64a300526a27ac440ec0fc5c09adcc006e
+  XiangShan/coupledL2/utility/rocket-chip  46f1efefa1ff431bffe3262e4830bc50316842f4
+  XiangShan/coupledL2/utility/rocket-chip/cde  52768c97a27b254c0cc0ac9401feb55b29e18c28
+  XiangShan/coupledL2/utility/rocket-chip/hardfloat  d93aa570806013dea479a92ba9bb33d1f2d4f69f
+  XiangShan/coupledL2/utility/rocket-chip/hardfloat/berkeley-softfloat-3  5c06db33fc1e2130f67c045327b0ec949032df1d
+  XiangShan/coupledL2/utility/rocket-chip/hardfloat/berkeley-testfloat-3  06b20075dd3c1a5d0dd007a93643282832221612
+  XiangShan/coupledL2/utility/rocket-chip/torture  99d8b2b441ecaa18b852505bb7718ee04e2753f5
+  XiangShan/coupledL2/utility/rocket-chip/torture/env  ce70afbf50a203be04bc326326cfa75831fe7f5d
+  XiangShan/difftest  2e146c604dc10e58f4ad29ab4803c17dcad1dfe2
+  XiangShan/fudian  e1bd4695ca7beb36a5ce7357e9527ad9e95b9ec1
+  XiangShan/fudian/berkeley-softfloat-3  b64af41c3276f97f0e181920400ee056b9c88037
+  XiangShan/fudian/berkeley-testfloat-3  06b20075dd3c1a5d0dd007a93643282832221612
+  XiangShan/huancun  65ef077373ecf398b4cecdea06b65ef9b8d79044
+  XiangShan/huancun/Utility  c8d424348b0a058753116558c3d7066dba375f17
+  XiangShan/huancun/Utility/rocket-chip  46f1efefa1ff431bffe3262e4830bc50316842f4
+  XiangShan/huancun/Utility/rocket-chip/cde  52768c97a27b254c0cc0ac9401feb55b29e18c28
+  XiangShan/huancun/Utility/rocket-chip/hardfloat  d93aa570806013dea479a92ba9bb33d1f2d4f69f
+  XiangShan/huancun/Utility/rocket-chip/hardfloat/berkeley-softfloat-3  5c06db33fc1e2130f67c045327b0ec949032df1d
+  XiangShan/huancun/Utility/rocket-chip/hardfloat/berkeley-testfloat-3  06b20075dd3c1a5d0dd007a93643282832221612
+  XiangShan/huancun/Utility/rocket-chip/torture  99d8b2b441ecaa18b852505bb7718ee04e2753f5
+  XiangShan/huancun/Utility/rocket-chip/torture/env  ce70afbf50a203be04bc326326cfa75831fe7f5d
+  XiangShan/huancun/rocket-chip  46f1efefa1ff431bffe3262e4830bc50316842f4
+  XiangShan/huancun/rocket-chip/cde  52768c97a27b254c0cc0ac9401feb55b29e18c28
+  XiangShan/huancun/rocket-chip/hardfloat  d93aa570806013dea479a92ba9bb33d1f2d4f69f
+  XiangShan/huancun/rocket-chip/hardfloat/berkeley-softfloat-3  5c06db33fc1e2130f67c045327b0ec949032df1d
+  XiangShan/huancun/rocket-chip/hardfloat/berkeley-testfloat-3  06b20075dd3c1a5d0dd007a93643282832221612
+  XiangShan/huancun/rocket-chip/torture  99d8b2b441ecaa18b852505bb7718ee04e2753f5
+  XiangShan/huancun/rocket-chip/torture/env  ce70afbf50a203be04bc326326cfa75831fe7f5d
+  XiangShan/openLLC  9e6f78209b2f215fb9f6a8f0de250995ff3ab63d
+  XiangShan/openLLC/coupledL2  cd4ed5fc47f268882ed6b8bb99d10f4bd96c6ec5
+  XiangShan/openLLC/coupledL2/HuanCun  8faa17c9f7115782da1bd1665bd95587fba525ec
+  XiangShan/openLLC/coupledL2/HuanCun/Utility  de50694f6ffb48780a4b4665907442b3e4dd0d6d
+  XiangShan/openLLC/coupledL2/HuanCun/Utility/rocket-chip  175dfe096e3b7c630f93ef328df1cf0b2ed55de1
+  XiangShan/openLLC/coupledL2/HuanCun/Utility/rocket-chip/cde  52768c97a27b254c0cc0ac9401feb55b29e18c28
+  XiangShan/openLLC/coupledL2/HuanCun/Utility/rocket-chip/hardfloat  d93aa570806013dea479a92ba9bb33d1f2d4f69f
+  XiangShan/openLLC/coupledL2/HuanCun/Utility/rocket-chip/hardfloat/berkeley-softfloat-3  5c06db33fc1e2130f67c045327b0ec949032df1d
+  XiangShan/openLLC/coupledL2/HuanCun/Utility/rocket-chip/hardfloat/berkeley-testfloat-3  06b20075dd3c1a5d0dd007a93643282832221612
+  XiangShan/openLLC/coupledL2/HuanCun/Utility/rocket-chip/torture  99d8b2b441ecaa18b852505bb7718ee04e2753f5
+  XiangShan/openLLC/coupledL2/HuanCun/Utility/rocket-chip/torture/env  ce70afbf50a203be04bc326326cfa75831fe7f5d
+  XiangShan/openLLC/coupledL2/HuanCun/rocket-chip  90ae9a9314d444ade097fd5a471916869559b4fd
+  XiangShan/openLLC/coupledL2/HuanCun/rocket-chip/cde  52768c97a27b254c0cc0ac9401feb55b29e18c28
+  XiangShan/openLLC/coupledL2/HuanCun/rocket-chip/hardfloat  d93aa570806013dea479a92ba9bb33d1f2d4f69f
+  XiangShan/openLLC/coupledL2/HuanCun/rocket-chip/hardfloat/berkeley-softfloat-3  5c06db33fc1e2130f67c045327b0ec949032df1d
+  XiangShan/openLLC/coupledL2/HuanCun/rocket-chip/hardfloat/berkeley-testfloat-3  06b20075dd3c1a5d0dd007a93643282832221612
+  XiangShan/openLLC/coupledL2/HuanCun/rocket-chip/torture  99d8b2b441ecaa18b852505bb7718ee04e2753f5
+  XiangShan/openLLC/coupledL2/HuanCun/rocket-chip/torture/env  ce70afbf50a203be04bc326326cfa75831fe7f5d
+  XiangShan/openLLC/coupledL2/rocket-chip  90ae9a9314d444ade097fd5a471916869559b4fd
+  XiangShan/openLLC/coupledL2/rocket-chip/cde  52768c97a27b254c0cc0ac9401feb55b29e18c28
+  XiangShan/openLLC/coupledL2/rocket-chip/hardfloat  d93aa570806013dea479a92ba9bb33d1f2d4f69f
+  XiangShan/openLLC/coupledL2/rocket-chip/hardfloat/berkeley-softfloat-3  5c06db33fc1e2130f67c045327b0ec949032df1d
+  XiangShan/openLLC/coupledL2/rocket-chip/hardfloat/berkeley-testfloat-3  06b20075dd3c1a5d0dd007a93643282832221612
+  XiangShan/openLLC/coupledL2/rocket-chip/torture  99d8b2b441ecaa18b852505bb7718ee04e2753f5
+  XiangShan/openLLC/coupledL2/rocket-chip/torture/env  ce70afbf50a203be04bc326326cfa75831fe7f5d
+  XiangShan/openLLC/coupledL2/utility  a0a7f9894ed9033db5f5f201bb48f13a7d1cbb41
+  XiangShan/openLLC/coupledL2/utility/rocket-chip  175dfe096e3b7c630f93ef328df1cf0b2ed55de1
+  XiangShan/openLLC/coupledL2/utility/rocket-chip/cde  52768c97a27b254c0cc0ac9401feb55b29e18c28
+  XiangShan/openLLC/coupledL2/utility/rocket-chip/hardfloat  d93aa570806013dea479a92ba9bb33d1f2d4f69f
+  XiangShan/openLLC/coupledL2/utility/rocket-chip/hardfloat/berkeley-softfloat-3  5c06db33fc1e2130f67c045327b0ec949032df1d
+  XiangShan/openLLC/coupledL2/utility/rocket-chip/hardfloat/berkeley-testfloat-3  06b20075dd3c1a5d0dd007a93643282832221612
+  XiangShan/openLLC/coupledL2/utility/rocket-chip/torture  99d8b2b441ecaa18b852505bb7718ee04e2753f5
+  XiangShan/openLLC/coupledL2/utility/rocket-chip/torture/env  ce70afbf50a203be04bc326326cfa75831fe7f5d
+  XiangShan/openLLC/openNCB  5073e2c2efe19d71d11003df00425492067c4934
+  XiangShan/openLLC/openNCB/external/rocket-chip  90ae9a9314d444ade097fd5a471916869559b4fd
+  XiangShan/openLLC/openNCB/external/rocket-chip/cde  52768c97a27b254c0cc0ac9401feb55b29e18c28
+  XiangShan/openLLC/openNCB/external/rocket-chip/hardfloat  d93aa570806013dea479a92ba9bb33d1f2d4f69f
+  XiangShan/openLLC/openNCB/external/rocket-chip/hardfloat/berkeley-softfloat-3  5c06db33fc1e2130f67c045327b0ec949032df1d
+  XiangShan/openLLC/openNCB/external/rocket-chip/hardfloat/berkeley-testfloat-3  06b20075dd3c1a5d0dd007a93643282832221612
+  XiangShan/openLLC/openNCB/external/rocket-chip/torture  99d8b2b441ecaa18b852505bb7718ee04e2753f5
+  XiangShan/openLLC/openNCB/external/rocket-chip/torture/env  ce70afbf50a203be04bc326326cfa75831fe7f5d
+  XiangShan/openLLC/rocket-chip  90ae9a9314d444ade097fd5a471916869559b4fd
+  XiangShan/openLLC/rocket-chip/cde  52768c97a27b254c0cc0ac9401feb55b29e18c28
+  XiangShan/openLLC/rocket-chip/hardfloat  d93aa570806013dea479a92ba9bb33d1f2d4f69f
+  XiangShan/openLLC/rocket-chip/hardfloat/berkeley-softfloat-3  5c06db33fc1e2130f67c045327b0ec949032df1d
+  XiangShan/openLLC/rocket-chip/hardfloat/berkeley-testfloat-3  06b20075dd3c1a5d0dd007a93643282832221612
+  XiangShan/openLLC/rocket-chip/torture  99d8b2b441ecaa18b852505bb7718ee04e2753f5
+  XiangShan/openLLC/rocket-chip/torture/env  ce70afbf50a203be04bc326326cfa75831fe7f5d
+  XiangShan/openLLC/utility  eb69e4f7d4a254eeb5be115531475956de19c35a
+  XiangShan/openLLC/utility/rocket-chip  bea0af5d855a871699b907c1988961141bbf28e7
+  XiangShan/openLLC/utility/rocket-chip/cde  52768c97a27b254c0cc0ac9401feb55b29e18c28
+  XiangShan/openLLC/utility/rocket-chip/hardfloat  d93aa570806013dea479a92ba9bb33d1f2d4f69f
+  XiangShan/openLLC/utility/rocket-chip/hardfloat/berkeley-softfloat-3  5c06db33fc1e2130f67c045327b0ec949032df1d
+  XiangShan/openLLC/utility/rocket-chip/hardfloat/berkeley-testfloat-3  06b20075dd3c1a5d0dd007a93643282832221612
+  XiangShan/openLLC/utility/rocket-chip/torture  99d8b2b441ecaa18b852505bb7718ee04e2753f5
+  XiangShan/openLLC/utility/rocket-chip/torture/env  ce70afbf50a203be04bc326326cfa75831fe7f5d
+  XiangShan/ready-to-run  5a63554d67d7a73b404938f80c1b8e92476f7638
+  XiangShan/rocket-chip  46f1efefa1ff431bffe3262e4830bc50316842f4
+  XiangShan/rocket-chip/cde  52768c97a27b254c0cc0ac9401feb55b29e18c28
+  XiangShan/rocket-chip/hardfloat  d93aa570806013dea479a92ba9bb33d1f2d4f69f
+  XiangShan/rocket-chip/hardfloat/berkeley-softfloat-3  5c06db33fc1e2130f67c045327b0ec949032df1d
+  XiangShan/rocket-chip/hardfloat/berkeley-testfloat-3  06b20075dd3c1a5d0dd007a93643282832221612
+  XiangShan/rocket-chip/torture  99d8b2b441ecaa18b852505bb7718ee04e2753f5
+  XiangShan/rocket-chip/torture/env  ce70afbf50a203be04bc326326cfa75831fe7f5d
+  XiangShan/utility  2f0743f1f3ee1889049841926fa382cd0b32d8e2
+  XiangShan/utility/rocket-chip  46f1efefa1ff431bffe3262e4830bc50316842f4
+  XiangShan/utility/rocket-chip/cde  52768c97a27b254c0cc0ac9401feb55b29e18c28
+  XiangShan/utility/rocket-chip/hardfloat  d93aa570806013dea479a92ba9bb33d1f2d4f69f
+  XiangShan/utility/rocket-chip/hardfloat/berkeley-softfloat-3  5c06db33fc1e2130f67c045327b0ec949032df1d
+  XiangShan/utility/rocket-chip/hardfloat/berkeley-testfloat-3  06b20075dd3c1a5d0dd007a93643282832221612
+  XiangShan/utility/rocket-chip/torture  99d8b2b441ecaa18b852505bb7718ee04e2753f5
+  XiangShan/utility/rocket-chip/torture/env  ce70afbf50a203be04bc326326cfa75831fe7f5d
+  XiangShan/yunsuan  955921186e34bb8915806582a238181a6dc3435c
+
+NEMU  https://github.com/OpenXiangShan/NEMU.git  kmhv2-ref  d6fb8ed4eed7ebcebb9787a15650d5ceee70c8a2
+  NEMU/resource/simpoint/simpoint_repo  e51a936d7fddfa03c81692039f184ab6c437e99e  (未初始化，未导入)
+
+NEMU/resource/LibCheckpoint  https://github.com/OpenXiangShan/LibCheckpoint.git  master  1d8905cc2803c242ef257569128c2e68bf4272aa
+  NEMU/resource/LibCheckpoint/resource/nanopb  671672b4d7994a9b07a307ae654885c7202ae886
+
+NEMU/resource/gcpt_restore  https://github.com/OpenXiangShan/LibCheckpointAlpha.git  main  5169da768d18f4682a489eaabe7c071df6d6ef88
+
+NEMU/resource/nanopb  https://github.com/nanopb/nanopb.git  master  0f6d088e777a33dd7b54297f137ef10d745c5da8
+
+NEMU/resource/softfloat/repo  https://github.com/ucb-bar/berkeley-softfloat-3  master  a0c6494cdc11865811dec815d5c0049fba9d82a8
+
+NEMU-cpt  https://github.com/OpenXiangShan/NEMU.git  cpt-master  3d9f9fb8c05095ba84b6f9b4125234140b3de035
+  NEMU-cpt/resource/simpoint/simpoint_repo  e51a936d7fddfa03c81692039f184ab6c437e99e
+
+NEMU-cpt/resource/LibCheckpoint  https://github.com/OpenXiangShan/LibCheckpoint.git  master  1d8905cc2803c242ef257569128c2e68bf4272aa
+  NEMU-cpt/resource/LibCheckpoint/resource/nanopb  671672b4d7994a9b07a307ae654885c7202ae886
+
+NEMU-cpt/resource/gcpt_restore  https://github.com/OpenXiangShan/LibCheckpointAlpha.git  main  5169da768d18f4682a489eaabe7c071df6d6ef88
+
+NEMU-cpt/resource/nanopb  https://github.com/nanopb/nanopb.git  master  0f6d088e777a33dd7b54297f137ef10d745c5da8
+
+NEMU-cpt/resource/softfloat/repo  https://github.com/ucb-bar/berkeley-softfloat-3  master  a0c6494cdc11865811dec815d5c0049fba9d82a8
+
+DRAMsim3  https://github.com/OpenXiangShan/DRAMsim3.git  cosim-kmh  1d2a9bf6da8e050d975ef2669c42faa93943f489
+  DRAMsim3/ext/SuperLU_MT_3.1  68739c5a23cc48c9a13d28793834e4fee95d33ee  (未初始化，未导入)
+
+workload-builder  https://github.com/OpenXiangShan/workload-builder.git  main  b7c321dec6ad6f4c78abcaefc722b59b4043503c
+  workload-builder/bootloader/LibCheckpoint  1d8905cc2803c242ef257569128c2e68bf4272aa  (未初始化，未导入)
+  workload-builder/bootloader/LibCheckpointAlpha  5169da768d18f4682a489eaabe7c071df6d6ef88
+  workload-builder/bootloader/opensbi  cbf9f6734dd85a982c63e3cb5db7ffe09da839ca
+  workload-builder/nexus-am  f308903f8c623e82f8775ebf04ffffc74d330dc0  (未初始化，未导入)
+  workload-builder/workloads/am/riscv-tests/source  c978f6390b9bd2c8c37c864c7e9857c3d94c9c86  (未初始化，未导入)
+  workload-builder/workloads/am/riscv-vector-tests/source  5610826afcaa8eb5a1e5820a310544a073679d14  (未初始化，未导入)
+  workload-builder/workloads/linux/gapbs/source  b5e3e19c2845f22fb338f4a4bc4b1ccee861d026  (未初始化，未导入)
+  workload-builder/workloads/linux/kvmtool/source/dtc  7f3184a6c550bb8fb59e93c9901d75dced889dcf  (未初始化，未导入)
+  workload-builder/workloads/linux/kvmtool/source/kvmtool  b48735e5d562eaffb96cf98a91da212176f1534c  (未初始化，未导入)
+  workload-builder/workloads/linux/rvv-bench/source  4390f0368a4251a0b31e8d18c88847be4f835415  (未初始化，未导入)
+
+minjie-playground  https://github.com/OpenXiangShan/minjie-playground.git  master  2af747e357e241165fc434daa7b0f8cb7138b5cc
+  minjie-playground/Bin2ddr  c6c507c84ce8f9906030ef0bf8b1e9a4f01d388f  (未初始化，未导入)
+  minjie-playground/NEMU  1307adf0a1854aa778d6fa0b7c4bb3ebf8f94263  (未初始化，未导入)
+  minjie-playground/NutShell  041f694965728ea183a0622daa1734002bf4621e  (未初始化，未导入)
+  minjie-playground/XiangShan  5d393413277b3fab3043be145a1d48710586babf  (未初始化，未导入)
+  minjie-playground/difftest  d361c505e3c1ee3ef7bfc7ebb809fa835060c109  (未初始化，未导入)
+  minjie-playground/dma_ip_drivers  b0314ac0d0ffa201275f28e3fd6ab75577d21ac9  (未初始化，未导入)
+  minjie-playground/env-scripts  d93a464342dc941db7fb097919229683ec756d12  (未初始化，未导入)
+  minjie-playground/workload-builder  868cea8d7ad0aa4d39beba0ca78c5f9e0d212ff5  (未初始化，未导入)
+
+gem5_data_proc  https://github.com/OpenXiangShan/gem5_data_proc.git  graphmaker  80316cedb2f17b05a692b729e4af2e340c01b986
+
+checkpoints/restorers/LibCheckpointAlpha-gem5-kmhv2  /home/data/wanli/Cmodel_projects/xiangshan-correlation/workload-builder/bootloader/LibCheckpointAlpha  gem5-kmhv2  5b2b8911adcd0cb8c862be43b734f3c47f1f9f21
+
+# 本地提交（基线之后）
+GEM5-XS  基线 KMH-V2 d11fc1cb558ebf1565c9f29e3c0df379ce8842ad
+checkpoints/restorers/LibCheckpointAlpha-gem5-kmhv2  基线 58019e356e9cec8ef4310cc4fe710ae8af48e618

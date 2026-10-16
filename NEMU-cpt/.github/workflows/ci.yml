@@ -1,0 +1,611 @@
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+env:
+  CI_WORKLOADS: ./workloads
+  SPIKE_SO: ./ready-to-run/spike-xiangshan-ref.so
+  NUTSHELL_SPIKE_SO: ./ready-to-run/spike-nutshell-ref.so
+  CROSS_COMPILE: riscv64-linux-gnu-
+  LIBCHECKPOINT_CROSS_COMPILE: riscv64-linux-gnu-
+  CPT_CROSS_COMPILE: riscv64-linux-gnu-
+  NANOPB_CROSS_COMPILE: riscv64-linux-gnu-
+  XSAI_BLAS_RELEASE_URL: https://github.com/OurCompArchGroup/xsai-blas-release/releases/download/v1.0.0/xsai-blas-nemu-workloads-v1.0.0.tar.zst
+  XSAI_BLAS_WORKLOADS: ./xsai-blas-workloads
+  GITHUB_TOKEN: ${{ github.token }}
+
+jobs:
+  fetch-workloads:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    name: Fetch and decompress all testing workloads
+    outputs:
+      release-url: ${{ steps.get-url.outputs.url }}
+    steps:
+      - name: Get workloads URL
+        id: get-url
+        run: |
+          metadata_url=$(curl -s https://api.github.com/repos/OpenXiangShan/workload-builder/releases/latest | jq -r '.assets[0].url')
+          asset_url=$(curl -s "$metadata_url" | jq -r '.browser_download_url')
+          echo "url=$asset_url" >> $GITHUB_OUTPUT
+      - name: Cache workloads
+        uses: actions/cache@v6
+        id: cache-workloads
+        with:
+          path: ${{ env.CI_WORKLOADS }}
+          key: ${{ steps.get-url.outputs.url }}
+      - name: Download workloads
+        if: steps.cache-workloads.outputs.cache-hit != 'true'
+        run:
+          wget ${{ steps.get-url.outputs.url }} -O workloads.zip
+      - name: Decompress workloads
+        if: steps.cache-workloads.outputs.cache-hit != 'true'
+        run: |
+          unzip workloads.zip
+          tar -xf workloads.tar.zstd
+          mv images workloads/
+
+  check-configs:
+    runs-on: ubuntu-latest
+    continue-on-error: false
+    name: Check All Configs
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v7
+    - name: Setup env
+      run: |
+        echo "NEMU_HOME=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+    - name: bump configs
+      run: |
+        bash ./scripts/bump_configs.sh
+    - name: check
+      run: |
+        if [ -n "$(git status --porcelain)" ]; then
+          echo "Please run 'bash ./scripts/bump_configs.sh' manually"
+          exit 1
+        fi
+
+  compilation-all:
+    strategy:
+      matrix:
+        container-version: ['ubuntu-22.04', 'ubuntu-24.04']
+      fail-fast: false
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/openxiangshan/xs-env:${{ matrix.container-version }}
+    continue-on-error: false
+    name: Compilation - all configs
+    timeout-minutes: 60
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v7
+    - name: Setup env
+      run: |
+        echo "NEMU_HOME=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+    - name: Try to compile
+      id: list_configs
+      run: |
+        bash ./scripts/compilation-test.sh
+
+  basic-xiangshan:
+    needs: fetch-workloads
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/openxiangshan/xs-env:ubuntu-24.04
+    continue-on-error: false
+    timeout-minutes: 10
+    name: Basic - XiangShan
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          submodules: 'recursive'
+      - name: Checkout workload-builder
+        uses: actions/checkout@v7
+        with:
+          repository: OpenXiangShan/workload-builder
+          ref: f662b2382ccb18274769d49559926ad656a4d9b2
+          path: workload-builder
+      - name: Restore cache
+        uses: actions/cache@v6
+        with:
+          path: ${{ env.CI_WORKLOADS }}
+          key: ${{ needs.fetch-workloads.outputs.release-url }}
+      - name: Setup env
+        run: |
+          echo "NEMU_HOME=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+      - name: Initialize ready-to-run
+        run: |
+          make init-ready-to-run
+      - name: Build NEMU interpreter for XS
+        run: |
+          make riscv64-xs_defconfig
+          make -j `nproc`
+      - name: System - linux-hello-opensbi
+        run: |
+          ./build/riscv64-nemu-interpreter -b ${CI_WORKLOADS}/linux/hello/fw_payload.bin
+      - name: System - KVM
+        run: |
+          ./build/riscv64-nemu-interpreter -b ${CI_WORKLOADS}/linux/kvmtool/fw_payload.bin
+      - name: RVH bare-metal regression tests
+        run: |
+          git -C workload-builder submodule update --init nexus-am
+          AM_HOME=${GITHUB_WORKSPACE}/workload-builder/nexus-am \
+          PKG_DIR=${GITHUB_WORKSPACE}/rvh-workload \
+          CROSS_COMPILE=${CROSS_COMPILE} \
+            bash workload-builder/workloads/am/rvh-tests/build.sh
+          make clean-all
+          make riscv64-xs_bitmap_defconfig
+          make -j `nproc`
+          for test_bin in ${GITHUB_WORKSPACE}/rvh-workload/bin/*.bin; do
+            ./build/riscv64-nemu-interpreter -b "$test_bin"
+          done
+      - name: test cpt taking and restoring using zstd format
+        run: |
+          make clean-all
+          make riscv64-xs-cpt_defconfig
+          make -j `nproc`
+          make -C resource/gcpt_restore
+          # take cpt, and put cpt in output_top/test/linux
+          bash ./scripts/take_zstd.sh ${CI_WORKLOADS}/linux/coremark-pro/fw_payload.bin output_top
+          make clean-all
+
+          # restore cpt
+          make riscv64-xs-diff-spike_defconfig
+          make -j `nproc`
+          bash ./scripts/restore_zstd.sh
+          make clean-all
+
+#          make riscv64-xs-cpt-with-flash_defconfig
+#          make -j `nproc`
+#          bash ./scripts/take_zstd_into_flash.sh
+#          make clean-all
+
+          # restore cpt
+#          git submodule update --init --depth=1 ready-to-run
+#          make riscv64-xs-diff-spike-withflash_defconfig
+#          make gcpt_restore_bin
+#          make -j `nproc`
+#          bash ./scripts/restore_zstd_into_flash.sh
+#          make clean-all
+
+  basic-nutshell:
+    needs: fetch-workloads
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/openxiangshan/xs-env:ubuntu-24.04
+    continue-on-error: false
+    timeout-minutes: 10
+    name: Basic - NutShell
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: 'recursive'
+      - name: Restore cache
+        uses: actions/cache@v6
+        with:
+          path: ${{ env.CI_WORKLOADS }}
+          key: ${{ needs.fetch-workloads.outputs.release-url }}
+      - name: Setup env
+        run: |
+          echo "NEMU_HOME=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+      - name: Initialize ready-to-run
+        run: |
+          make init-ready-to-run
+      - name: Build NEMU interpreter
+        run: |
+          make riscv64-nutshell_defconfig
+          make -j
+      - name: Replace workload DTB
+        run: |
+          cd ${CI_WORKLOADS}/linux/hello
+          dd conv=notrunc bs=1024 seek=1536 if=dt/nutshell.dtb of=fw_payload.bin
+      - name: test boot linux
+        run: |
+          ./build/riscv64-nemu-interpreter -b ${CI_WORKLOADS}/linux/hello/fw_payload.bin
+
+  diff-spike-guard:
+    # NEMU should report error if RVV agnostic is enabled when comparing against Spike ref; It should crash in the expected way
+    needs: fetch-workloads
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/openxiangshan/xs-env:ubuntu-24.04
+    continue-on-error: false
+    name: Diff with Spike - Guard
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: 'recursive'
+
+      - name: Restore cache
+        uses: actions/cache@v6
+        with:
+          path: ${{ env.CI_WORKLOADS }}
+          key: ${{ needs.fetch-workloads.outputs.release-url }}
+
+      - name: Setup env
+        run: |
+          echo "NEMU_HOME=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+
+      - name: Initialize ready-to-run
+        run: |
+          make init-ready-to-run
+
+      - name: Build NEMU with V extension and agnostic
+        run: |
+          make riscv64-xs-diff-spike-agnostic_defconfig
+          make -j
+
+      - name: Run rvv-vector-tests with Spike DiffTest, expect error
+        run: |
+          set -x
+          ./build/riscv64-nemu-interpreter -b --diff ${SPIKE_SO} ${CI_WORKLOADS}/am/riscv-vector-tests/bin/vfadd.vf-0.bin > crash.log  || exit_code=$?
+          if [ ${exit_code} -eq 0 ]; then echo "Difftest is broken, it should report error!" exit 1; fi
+          match=$(grep "wrong.*=.*ffff" crash.log -c)
+          if [ ${match} -eq 0 ]; then echo "Difftest is broken, it should report at least one agnostic related difference!" exit 1; fi
+          set +x
+          echo "::group::NEMU-output"
+          cat crash.log
+          echo "::endgroup::"
+
+  diff-spike-basic:
+    needs: fetch-workloads
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/openxiangshan/xs-env:ubuntu-24.04
+    continue-on-error: false
+    name: Diff with Spike - Basic & System
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: 'recursive'
+
+      - name: Restore cache
+        uses: actions/cache@v6
+        with:
+          path: ${{ env.CI_WORKLOADS }}
+          key: ${{ needs.fetch-workloads.outputs.release-url }}
+
+      - name: Setup env
+        run: |
+          echo "NEMU_HOME=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+
+      - name: Initialize ready-to-run
+        run: |
+          make init-ready-to-run
+
+      - name: Build NEMU interpreter for diff with spike
+        run: |
+          make riscv64-xs-diff-spike_defconfig
+          make -j
+
+      - name: Run workload-builder basic workloads with Spike DiffTest
+        env:
+          NEMU_DIFF_JOBS: 2
+        run: |
+          bash scripts/ci/run-nemu-diff-spike-workloads.sh --suite basic
+
+      - name: Basic - rvv perf suite smoke
+        env:
+          tests: |
+            am/riscv-vector-tests/bin/vfadd.vf-0.bin
+            am/riscv-vector-tests/bin/vfsub.vf-0.bin
+            am/riscv-vector-tests/bin/vslide1down.vx-0.bin
+            am/riscv-vector-tests/bin/vor.vi-0.bin
+            am/riscv-vector-tests/bin/vlse32.v-0.bin
+            am/riscv-vector-tests/bin/vluxei32.v-0.bin
+            am/riscv-vector-tests/bin/vsuxei32.v-0.bin
+            am/riscv-vector-tests/bin/vlsseg4e32.v-0.bin
+        run: |
+          for test_bin in $tests; do
+            echo ::group::$test_bin
+            ./build/riscv64-nemu-interpreter -b --diff ${SPIKE_SO} ${CI_WORKLOADS}/${test_bin}
+            echo "::endgroup::"
+          done
+
+      - name: Upload Spike DiffTest logs
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: nemu-diff-spike-basic-logs
+          if-no-files-found: ignore
+          path: nemu-diff-spike-logs/
+
+  diff-spike-advanced:
+    needs: fetch-workloads
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/openxiangshan/xs-env:ubuntu-24.04
+    continue-on-error: false
+    name: Diff with Spike - Advanced
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: 'recursive'
+
+      - name: Restore cache
+        uses: actions/cache@v6
+        with:
+          path: ${{ env.CI_WORKLOADS }}
+          key: ${{ needs.fetch-workloads.outputs.release-url }}
+
+      - name: Setup env
+        run: |
+          echo "NEMU_HOME=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+
+      - name: Initialize ready-to-run
+        run: |
+          make init-ready-to-run
+
+      - name: Build NEMU interpreter for diff with spike
+        run: |
+          make clean-all
+          make riscv64-xs-diff-spike_defconfig
+          make -j
+
+      - name: Run workload-builder advanced workloads with Spike DiffTest
+        env:
+          NEMU_DIFF_JOBS: 2
+        run: |
+          bash scripts/ci/run-nemu-diff-spike-workloads.sh --suite advanced
+
+      - name: Upload Spike DiffTest logs
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: nemu-diff-spike-advanced-logs
+          if-no-files-found: ignore
+          path: nemu-diff-spike-logs/
+
+  diff-spike-spec-ckpt:
+    needs: fetch-workloads
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: bosc
+    continue-on-error: false
+    name: Diff with Spike - SPEC Checkpoint
+    timeout-minutes: 360
+    steps:
+      - name: Checkout NEMU
+        uses: actions/checkout@v7
+        with:
+          submodules: 'recursive'
+
+      - name: Setup env
+        run: |
+          echo "NEMU_HOME=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+
+      - name: Initialize ready-to-run
+        run: |
+          make init-ready-to-run
+
+      - name: Build NEMU interpreter for diff with spike
+        run: |
+          make riscv64-xs-diff-spike_defconfig
+          make -j
+
+      - name: Run SPEC checkpoints with Spike DiffTest
+        env:
+          SPEC_CKPT_JOBS: 16
+          SPEC_MAX_INSTR: 40000000
+          SPEC_CKPT_PER_SUBITEM: 5
+          SPEC_CKPT_MAX_MEMORY_GB: 8
+          SPEC_CKPT_SEED: ${{ github.sha }}
+        run: |
+          lock_dir=${SPEC_CKPT_CI_LOCK_DIR:-/tmp/nemu-spec-ckpt-ci-locks}
+          mkdir -p "$lock_dir"
+
+          while true; do
+            for slot in 0 1; do
+              lock_file="$lock_dir/slot-${slot}.lock"
+              exec {lock_fd}>"$lock_file"
+              if flock -n "$lock_fd"; then
+                echo "Acquired SPEC checkpoint CI slot ${slot}."
+                bash scripts/ci/run-nemu-diff-spike-workloads.sh --suite spec-ckpt
+                exit $?
+              fi
+              eval "exec ${lock_fd}>&-"
+            done
+            echo "All SPEC checkpoint CI slots are busy; waiting..."
+            sleep 30
+          done
+
+      - name: Upload Spike DiffTest logs
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: nemu-diff-spike-spec-ckpt-logs
+          if-no-files-found: ignore
+          path: nemu-diff-spike-logs/
+
+  performance:
+    needs: fetch-workloads
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/openxiangshan/xs-env:ubuntu-24.04
+    continue-on-error: false
+    name: Performance Tests
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: 'recursive'
+
+      - name: Restore Workloads
+        id: cache-workloads
+        uses: actions/cache@v6
+        with:
+          path: ${{ env.CI_WORKLOADS }}
+          key: ${{ needs.fetch-workloads.outputs.release-url }}
+
+      - name: Restore DynamoRIO
+        id: cache-dynamorio
+        uses: actions/cache@v6
+        with:
+          path: DynamoRIO-Linux-11.3.0-1
+          key: DynamoRIO-Linux-11.3.0-extracted
+
+      - name: Download and extract
+        if: steps.cache-dynamorio.outputs.cache-hit != 'true'
+        run: |
+          wget https://github.com/DynamoRIO/dynamorio/releases/download/release_11.3.0-1/DynamoRIO-Linux-11.3.0.tar.gz -O - | tar -zxf -
+
+      - name: Restore XSAI BLAS workloads
+        id: cache-xsai-blas
+        uses: actions/cache@v6
+        with:
+          path: ${{ env.XSAI_BLAS_WORKLOADS }}
+          key: xsai-blas-nemu-workloads-v1.0.0
+
+      - name: Download and extract XSAI BLAS workloads
+        if: steps.cache-xsai-blas.outputs.cache-hit != 'true'
+        run: |
+          archive=xsai-blas-nemu-workloads-v1.0.0.tar.zst
+          wget --https-only --retry-connrefused --tries=3 \
+            "${XSAI_BLAS_RELEASE_URL}" -O "${archive}"
+          rm -rf "${XSAI_BLAS_WORKLOADS}"
+          mkdir -p "${XSAI_BLAS_WORKLOADS}"
+          tar --zstd -xf "${archive}" \
+            --strip-components=1 -C "${XSAI_BLAS_WORKLOADS}"
+
+      - name: Setup env
+        run: |
+          echo "NEMU_HOME=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+
+      - name: Run performance tests
+        env:
+          PERF_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PERF_BASE_REF: ${{ github.base_ref }}
+        run: |
+          workloads_dir=$(realpath "${CI_WORKLOADS}")
+          xsai_blas_dir=$(realpath "${XSAI_BLAS_WORKLOADS}")
+          dynamorio_dir=$(realpath DynamoRIO-Linux-11.3.0-1)
+          ref_config_generator=$(realpath tools/ref-so-runner/gen-xs-ref-perf-defconfig.sh)
+
+          tools/perf-benchmark.sh \
+            --defconfig riscv64-xs_defconfig \
+            --title "NEMU Performance Results - XS Interpreter" \
+            --workloads "$workloads_dir" \
+            --dynamorio-dir "$dynamorio_dir" \
+            --output performance_xs.md \
+            --metrics-output performance_xs.tsv
+          tools/perf-benchmark.sh \
+            --defconfig riscv64-xs-ref-perf_defconfig \
+            --title "NEMU Performance Results - XS Ref Shared Object" \
+            --workloads "$workloads_dir" \
+            --dynamorio-dir "$dynamorio_dir" \
+            --output performance_ref_so.md \
+            --metrics-output performance_ref_so.tsv \
+            --defconfig-gen-script "$ref_config_generator" \
+            --binary "${GITHUB_WORKSPACE}/tools/ref-so-runner/runner"
+          tools/perf-benchmark.sh \
+            --defconfig riscv64-matrix-xs_defconfig \
+            --title "NEMU Performance Results - XSAI Interpreter" \
+            --workloads "$xsai_blas_dir" \
+            --dynamorio-dir "$dynamorio_dir" \
+            --suite xsai-blas \
+            --output performance_xsai_blas.md \
+            --metrics-output performance_xsai_blas.tsv
+
+          if [ -n "${PERF_BASE_SHA:-}" ] && [ -n "${PERF_BASE_REF:-}" ]; then
+            git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+            git config --global --add safe.directory "${GITHUB_WORKSPACE}/perf-baseline"
+            echo "Building perf baseline from PR base commit ${PERF_BASE_SHA} (${PERF_BASE_REF})"
+            git fetch --depth=1 origin "${PERF_BASE_SHA}"
+            git worktree prune
+            rm -rf perf-baseline
+            git worktree add --detach perf-baseline "${PERF_BASE_SHA}"
+            git -C perf-baseline submodule update --init --recursive --depth=1
+
+            if [ -f perf-baseline/configs/riscv64-xs_defconfig ]; then
+              tools/perf-benchmark.sh \
+                --repo-dir perf-baseline \
+                --defconfig riscv64-xs_defconfig \
+                --title "Baseline - XS Interpreter" \
+                --workloads "$workloads_dir" \
+                --dynamorio-dir "$dynamorio_dir" \
+                --output baseline_xs.md \
+                --metrics-output baseline_xs.tsv
+            fi
+
+            if [ -f perf-baseline/configs/riscv64-xs-ref_defconfig ]; then
+              tools/perf-benchmark.sh \
+                --repo-dir perf-baseline \
+                --defconfig riscv64-xs-ref-perf_defconfig \
+                --title "Baseline - XS Ref Shared Object" \
+                --workloads "$workloads_dir" \
+                --dynamorio-dir "$dynamorio_dir" \
+                --output baseline_ref_so.md \
+                --metrics-output baseline_ref_so.tsv \
+                --defconfig-gen-script "$ref_config_generator" \
+                --binary "${GITHUB_WORKSPACE}/tools/ref-so-runner/runner"
+            fi
+
+            if [ -f perf-baseline/configs/riscv64-matrix-xs_defconfig ]; then
+              tools/perf-benchmark.sh \
+                --repo-dir perf-baseline \
+                --defconfig riscv64-matrix-xs_defconfig \
+                --title "Baseline - XSAI Interpreter" \
+                --workloads "$xsai_blas_dir" \
+                --dynamorio-dir "$dynamorio_dir" \
+                --suite xsai-blas \
+                --output baseline_xsai_blas.md \
+                --metrics-output baseline_xsai_blas.tsv
+            fi
+          fi
+
+          tools/perf-compare.sh \
+            --title "NEMU Performance Results - XS Interpreter" \
+            --current performance_xs.tsv \
+            --baseline baseline_xs.tsv \
+            > performance_results.md
+          echo >> performance_results.md
+          tools/perf-compare.sh \
+            --title "NEMU Performance Results - XS Ref Shared Object" \
+            --current performance_ref_so.tsv \
+            --baseline baseline_ref_so.tsv \
+            >> performance_results.md
+          echo >> performance_results.md
+          tools/perf-compare.sh \
+            --title "NEMU Performance Results - XSAI Interpreter" \
+            --current performance_xsai_blas.tsv \
+            --baseline baseline_xsai_blas.tsv \
+            >> performance_results.md
+          cat >> performance_results.md <<'EOF'
+
+          * Host Instructions is measured by DynamoRIO's inscount client.
+          * rvh-workload-suite runs the nested Linux/kvmtool guest to exercise the H extension and two-stage translation.
+          * Estimated Host Throughput assumes a fixed 4GHz CPU and IPC=2.5.
+          * Actual NEMU Throughput is a single native NEMU run and may vary with host CPU performance.
+          * Baseline columns are populated on pull_request runs when the PR base contains the same defconfig.
+          * Change vs Baseline (Instructions) is computed from host instruction count; positive means fewer host instructions than baseline.
+          * XSAI results use the pinned XSAI BLAS v1.0.0 workload release.
+          EOF
+          cat performance_results.md
+          cat performance_results.md >> "$GITHUB_STEP_SUMMARY"
+      
+      - name: Record PR number
+        if: github.event_name == 'pull_request'
+        env:
+          PR_NUMBER: ${{ github.event.number }}
+        run: |
+          echo -n $PR_NUMBER > PR_NUMBER.txt
+      
+      - name: Save performance results artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: performance-results
+          if-no-files-found: ignore
+          path: |
+            performance_results.md
+            PR_NUMBER.txt
+
+  build-so:
+    name: Build NEMU Difftest Shared Objects
+    uses: ./.github/workflows/build.yml

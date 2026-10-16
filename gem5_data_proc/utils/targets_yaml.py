@@ -1,0 +1,328 @@
+import os
+import os.path as osp
+import re
+from dataclasses import dataclass
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
+
+from utils.target_patterns import gem5_glob_to_stat_regex
+
+
+def _snake_case(s: str) -> str:
+    s = re.sub(r"[^0-9a-zA-Z]+", "_", s)
+    s = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", s)
+    s = re.sub(r"__+", "_", s)
+    return s.strip("_").lower()
+
+
+def _format_macros(s: str, macros: Dict[str, str]) -> str:
+    for k, v in macros.items():
+        s = s.replace("{" + k + "}", v)
+    return s
+
+
+def _join_stat(base: str, suffix: str) -> str:
+    if not base:
+        return suffix
+    if suffix.startswith("system."):
+        return suffix
+    if base.endswith("."):
+        return base + suffix
+    if suffix.startswith("."):
+        return base + suffix
+    return base + "." + suffix
+
+
+def _as_string_list(v: object) -> List[str]:
+    if isinstance(v, (list, tuple)):
+        out = [str(x).strip() for x in v if str(x).strip()]
+        if not out:
+            raise ValueError("empty gem5 target alternatives are not supported")
+        return out
+    s = str(v).strip()
+    if not s:
+        raise ValueError("empty gem5 target is not supported")
+    return [s]
+
+
+def _format_xs_target(v: object, xs_fmt: Optional[str], macros: Dict[str, str]) -> object:
+    if isinstance(v, (list, tuple)):
+        if len(v) != 2:
+            raise ValueError("xs accumulated target must be [pattern, count]")
+        stat_pat = _format_macros(str(v[0]).strip(), macros)
+        if not stat_pat:
+            raise ValueError("empty xs accumulated target pattern is not supported")
+        try:
+            repeat = int(v[1])
+        except Exception as e:
+            raise ValueError("xs accumulated target count must be an integer") from e
+        if repeat <= 0:
+            raise ValueError("xs accumulated target count must be positive")
+        compiled = xs_fmt.replace("{stat}", stat_pat) if xs_fmt is not None else stat_pat
+        return [compiled, repeat]
+
+    xs_val_s = _format_macros(str(v), macros)
+    return xs_fmt.replace("{stat}", xs_val_s) if xs_fmt is not None else xs_val_s
+
+
+@dataclass(frozen=True)
+class LoadedYamlTargets:
+    groups: List[str]
+    gem5_targets: Dict[str, str]
+    xs_targets: Dict[str, Any]
+    derived_gem5: Dict[str, str]
+    derived_xs: Dict[str, str]
+    derived: Dict[str, str]
+    # Ordered columns as they appear in YAML across selected groups/files.
+    column_order: List[str]
+    # Per-group ordered column names (gem5/xs/derived keys merged, YAML order).
+    group_to_columns: Dict[str, List[str]]
+
+
+def _load_yaml_file(path: str) -> dict:
+    try:
+        import yaml  # type: ignore
+    except Exception as e:
+        raise RuntimeError(
+            "PyYAML is required for YAML targets. Install with: "
+            "`python3 -m pip install pyyaml`"
+        ) from e
+
+    class UniqueKeyLoader(yaml.SafeLoader):
+        pass
+
+    def construct_unique_mapping(loader, node, deep=False):
+        mapping = {}
+        for key_node, value_node in node.value:
+            key = loader.construct_object(key_node, deep=deep)
+            if key in mapping:
+                raise ValueError(f"duplicate YAML key {key!r} in {path}")
+            mapping[key] = loader.construct_object(value_node, deep=deep)
+        return mapping
+
+    UniqueKeyLoader.add_constructor(
+        yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
+        construct_unique_mapping,
+    )
+
+    with open(path, "r") as f:
+        data = yaml.load(f, Loader=UniqueKeyLoader)
+    if data is None:
+        return {}
+    if not isinstance(data, dict):
+        raise ValueError(f"invalid targets yaml (expected mapping): {path}")
+    return data
+
+
+def discover_target_files(dirs: Sequence[str]) -> List[str]:
+    files: List[str] = []
+    for d in dirs:
+        if not d:
+            continue
+        if not osp.isdir(d):
+            continue
+        for name in sorted(os.listdir(d)):
+            if name.endswith(".yaml") or name.endswith(".yml"):
+                files.append(osp.join(d, name))
+    return files
+
+
+def list_groups(dirs: Sequence[str]) -> List[str]:
+    groups: List[str] = []
+    for f in discover_target_files(dirs):
+        data = _load_yaml_file(f)
+        g = data.get("groups", {})
+        if isinstance(g, dict):
+            groups.extend(list(g.keys()))
+    return sorted(set(groups))
+
+
+def load_groups(
+    dirs: Sequence[str],
+    selected_groups: Sequence[str],
+) -> LoadedYamlTargets:
+    selected = [g.strip() for g in selected_groups if g.strip()]
+    if not selected:
+        return LoadedYamlTargets(
+            groups=[],
+            gem5_targets={},
+            xs_targets={},
+            derived_gem5={},
+            derived_xs={},
+            derived={},
+            column_order=[],
+            group_to_columns={},
+        )
+
+    all_files = discover_target_files(dirs)
+    if not all_files:
+        raise FileNotFoundError(f"no targets yaml files found under: {', '.join(dirs)}")
+
+    gem5_targets: Dict[str, str] = {}
+    xs_targets: Dict[str, Any] = {}
+    derived_gem5: Dict[str, str] = {}
+    derived_xs: Dict[str, str] = {}
+    derived: Dict[str, str] = {}
+    loaded_groups: List[str] = []
+    group_to_columns: Dict[str, List[str]] = {}
+    column_order: List[str] = []
+
+    for f in all_files:
+        data = _load_yaml_file(f)
+
+        domain = str(data.get("domain", "")).strip()
+        defaults = data.get("defaults", {}) or {}
+        if not isinstance(defaults, dict):
+            raise ValueError(f"invalid defaults in {f} (expected mapping)")
+        macros: Dict[str, str] = {str(k): str(v) for k, v in defaults.items()}
+
+        groups = data.get("groups", {}) or {}
+        if not isinstance(groups, dict):
+            raise ValueError(f"invalid groups in {f} (expected mapping)")
+
+        for group_name, group_def in groups.items():
+            if group_name not in selected:
+                continue
+            if not isinstance(group_def, dict):
+                raise ValueError(f"invalid group {group_name!r} in {f} (expected mapping)")
+
+            loaded_groups.append(group_name)
+
+            base_gem5 = str(group_def.get("base_gem5", "") or "")
+            base_gem5 = _format_macros(base_gem5, macros)
+
+            xs_fmt = group_def.get("xs_fmt")
+            if xs_fmt is not None:
+                xs_fmt = _format_macros(str(xs_fmt), macros)
+
+            gem5_map = group_def.get("gem5", {}) or {}
+            if not isinstance(gem5_map, dict):
+                raise ValueError(f"invalid gem5 map for {group_name!r} in {f}")
+
+            xs_map = group_def.get("xs", {}) or {}
+            if not isinstance(xs_map, dict):
+                raise ValueError(f"invalid xs map for {group_name!r} in {f}")
+
+            derived_map = group_def.get("derived", {}) or {}
+            if not isinstance(derived_map, dict):
+                raise ValueError(f"invalid derived map for {group_name!r} in {f}")
+
+            derived_gem5_map = group_def.get("derived_gem5", {}) or {}
+            if not isinstance(derived_gem5_map, dict):
+                raise ValueError(
+                    f"invalid derived_gem5 map for {group_name!r} in {f}"
+                )
+
+            derived_xs_map = group_def.get("derived_xs", {}) or {}
+            if not isinstance(derived_xs_map, dict):
+                raise ValueError(
+                    f"invalid derived_xs map for {group_name!r} in {f}"
+                )
+
+            gem5_regex_map = group_def.get("gem5_regex", {}) or {}
+            if not isinstance(gem5_regex_map, dict):
+                raise ValueError(
+                    f"invalid gem5_regex map for {group_name!r} in {f}"
+                )
+
+            # Track YAML key order for UI/CSV column ordering.
+            # Order: raw targets, backend-specific derived keys, then common
+            # derived keys, deduped within each group.
+            group_cols: List[str] = group_to_columns.setdefault(group_name, [])
+            group_seen = set(group_cols)
+            for m in (
+                gem5_map,
+                gem5_regex_map,
+                xs_map,
+                derived_gem5_map,
+                derived_xs_map,
+                derived_map,
+            ):
+                for col in m.keys():
+                    col = str(col).strip()
+                    if not col or col in group_seen:
+                        continue
+                    group_cols.append(col)
+                    group_seen.add(col)
+                    if col not in column_order:
+                        column_order.append(col)
+
+            for col, suffix in gem5_map.items():
+                col = str(col).strip()
+                if not col:
+                    continue
+                compiled_parts: List[str] = []
+                for suffix_item in _as_string_list(suffix):
+                    full = _join_stat(base_gem5, suffix_item)
+                    full = _format_macros(full, macros)
+                    compiled_parts.append(gem5_glob_to_stat_regex(full))
+                compiled = (
+                    compiled_parts[0]
+                    if len(compiled_parts) == 1
+                    else "(?:" + "|".join(compiled_parts) + ")"
+                )
+                if col in gem5_targets and gem5_targets[col] != compiled:
+                    raise ValueError(f"duplicate gem5 column {col!r} across yaml files/groups")
+                gem5_targets[col] = compiled
+
+            for col, pattern in gem5_regex_map.items():
+                col = str(col).strip()
+                if not col:
+                    continue
+                pattern = _format_macros(str(pattern), macros)
+                if col in gem5_targets and gem5_targets[col] != pattern:
+                    raise ValueError(
+                        f"duplicate gem5 column {col!r} across yaml files/groups"
+                    )
+                gem5_targets[col] = pattern
+
+            for col, xs_val in xs_map.items():
+                col = str(col).strip()
+                if not col:
+                    continue
+                formatted_xs = _format_xs_target(xs_val, xs_fmt, macros)
+                if col in xs_targets and xs_targets[col] != formatted_xs:
+                    raise ValueError(f"duplicate xs column {col!r} across yaml files/groups")
+                xs_targets[col] = formatted_xs
+
+            for col, expr in derived_map.items():
+                col = str(col).strip()
+                if not col:
+                    continue
+                expr = _format_macros(str(expr), macros)
+                if col in derived and derived[col] != expr:
+                    raise ValueError(f"duplicate derived column {col!r} across yaml files/groups")
+                derived[col] = expr
+
+            for target, target_map, section in (
+                (derived_gem5, derived_gem5_map, "derived_gem5"),
+                (derived_xs, derived_xs_map, "derived_xs"),
+            ):
+                for col, expr in target_map.items():
+                    col = str(col).strip()
+                    if not col:
+                        continue
+                    expr = _format_macros(str(expr), macros)
+                    if col in target and target[col] != expr:
+                        raise ValueError(
+                            f"duplicate {section} column {col!r} "
+                            "across yaml files/groups"
+                        )
+                    target[col] = expr
+
+    missing_groups = sorted(set(selected) - set(loaded_groups))
+    if missing_groups:
+        raise ValueError(f"unknown groups: {', '.join(missing_groups)}")
+
+    # internal: allow a convenient "domain" prefix if caller wants it later
+    _ = domain
+    _ = _snake_case
+    return LoadedYamlTargets(
+        groups=sorted(set(loaded_groups)),
+        gem5_targets=gem5_targets,
+        xs_targets=xs_targets,
+        derived_gem5=derived_gem5,
+        derived_xs=derived_xs,
+        derived=derived,
+        column_order=column_order,
+        group_to_columns=group_to_columns,
+    )

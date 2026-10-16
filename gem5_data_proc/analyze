@@ -1,0 +1,63 @@
+#!/usr/bin/env python3
+
+import re
+import argparse
+
+from paths import *
+from utils import common as c
+from utils.target_stats import *
+
+parser = argparse.ArgumentParser(description='check sum of slots',
+                                prefix_chars='-')
+parser.add_argument('-s', '--stats', default='./stats.txt',
+                    help='stats.txt to be converted')
+parser.add_argument('-n', '--num-insts',
+                    default=0, type=int,
+                    help='inst number to be searched')
+parser.add_argument('-b', '--brief', action='store_true',
+                    help='brief information')
+parser.add_argument('-d', '--breakdown-targets', action='store_true',
+                    help='breakdown information')
+parser.add_argument('--branch', action='store_true',
+                    help='branch prediction information')
+parser.add_argument('--cache', action='store_true',
+                    help='cache miss information')
+
+opt = parser.parse_args()
+curdir = os.getcwd()
+# make_st_stat_cache()
+
+max_insts = 200*10**6
+
+if opt.num_insts:
+    num_insts = opt.num_insts
+else:
+    num_insts = max_insts
+
+m = re.search('(\w+)_(\w+)$', curdir)
+if m:
+    hpt = m.group(1)
+    lpt = m.group(2)
+else:
+    hpt = re.search('(\w+)$', curdir).group(1)
+    lpt = None
+
+if opt.cache:
+    standard_targets += cache_targets
+
+if opt.branch:
+    standard_targets += branch_targets
+
+used_target = standard_targets
+if opt.brief:
+    used_target = brief_targets
+elif opt.breakdown_targets:
+    used_target = slot_targets
+
+d = c.get_stats(opt.stats, used_target, num_insts, re_targets=True)
+if used_target == standard_targets:
+    if opt.branch:
+        c.add_branch_mispred(d)
+
+c.print_dict(d)
+

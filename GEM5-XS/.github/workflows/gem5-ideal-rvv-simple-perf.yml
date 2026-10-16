@@ -1,0 +1,13 @@
+name: gem5 Simple RVV Performance Test (Ideal BTB)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  perf_test:
+    uses: ./.github/workflows/gem5-perf-template.yml
+    with:
+      script_path: ../kmh_v3_ideal.sh
+      benchmark_type: "spec06int-rvv-0.8c"
+      vector_type: "simple"
+      check_result: false # Warning: rvv test will not show the difftest failure

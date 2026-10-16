@@ -1,0 +1,20 @@
+domain: basic
+
+defaults:
+  gem5_cpu_prefix: system.cpu
+  # Some logs print `[time=14539151]` (no space after `=`), some print `[time= 14539151]`.
+  perf: "\\[PERF \\]\\[time=\\s*\\d+\\]"
+
+groups:
+  basic:
+    base_gem5: "{gem5_cpu_prefix}"
+    gem5:
+      # totalIpc equals ipc for single-thread runs and covers SMT total throughput.
+      ipc: totalIpc
+      cycles: numCycles
+    gem5_regex:
+      # Match the scalar stat in single-thread runs and only ::total in SMT.
+      committedInsts: 'system\.cpu\.committedInsts(?:::total)?'
+    xs:
+      committedInsts: "{perf} .*\\.rob.*: commitInstr,\\s+(\\d+)"
+      cycles: "{perf} .*\\.rob.*: clock_cycle,\\s+(\\d+)"

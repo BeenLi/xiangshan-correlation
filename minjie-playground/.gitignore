@@ -1,0 +1,9 @@
+build/
+ready-to-run/
+bitstream/
+jobs/
+worktrees/
+.codex
+*.jou
+*.log
+

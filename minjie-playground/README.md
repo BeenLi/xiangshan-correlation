@@ -1,0 +1,19 @@
+# MinJie Playground
+
+MinJie Playground developed by [XiangShan team](https://github.com/OpenXiangShan).
+
+## Documentation
+
+| Flow | Doc Index |
+|------|------|
+| Checkpoint Scripts | [docs/checkpoint](docs/checkpoint/README.md) |
+| Fpga Difftest | [docs/FpgaDiff](docs/FpgaDiff/README.md) |
+| Fpga without DiffTest | [English](docs/Fpga/README.md) / [中文](docs/Fpga/README.zh-CN.md) |
+| ML Synthesis | [docs/ml-synthesis.md](docs/ml-synthesis.md) |
+
+## LICENSE
+Copyright © 2020-2026 Institute of Computing Technology, Chinese Academy of Sciences.
+
+Copyright © 2021-2026 Beijing Institute of Open Source Chip
+
+MinJie-playground is licensed under [Mulan PSL v2](LICENSE).

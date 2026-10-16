@@ -1,0 +1,495 @@
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+env:
+  CI_WORKLOADS: ./workloads
+  SPIKE_SO: ./ready-to-run/spike-xiangshan-ref.so
+  NUTSHELL_SPIKE_SO: ./ready-to-run/spike-nutshell-ref.so
+  CROSS_COMPILE: riscv64-linux-gnu-
+  LIBCHECKPOINT_CROSS_COMPILE: riscv64-linux-gnu-
+  CPT_CROSS_COMPILE: riscv64-linux-gnu-
+  NANOPB_CROSS_COMPILE: riscv64-linux-gnu-
+
+jobs:
+  fetch-workloads:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    name: Fetch and decompress all testing workloads
+    outputs:
+      release-url: ${{ steps.get-url.outputs.url }}
+    steps:
+      - name: Get workloads URL
+        id: get-url
+        run: |
+          metadata_url=$(curl -s https://api.github.com/repos/OpenXiangShan/workload-builder/releases/latest | jq -r '.assets[0].url')
+          asset_url=$(curl -s "$metadata_url" | jq -r '.browser_download_url')
+          echo "url=$asset_url" >> $GITHUB_OUTPUT
+      - name: Cache workloads
+        uses: actions/cache@v4
+        id: cache-workloads
+        with:
+          path: ${{ env.CI_WORKLOADS }}
+          key: ${{ steps.get-url.outputs.url }}
+      - name: Download workloads
+        if: steps.cache-workloads.outputs.cache-hit != 'true'
+        run:
+          wget ${{ steps.get-url.outputs.url }} -O workloads.zip
+      - name: Decompress workloads
+        if: steps.cache-workloads.outputs.cache-hit != 'true'
+        run: |
+          unzip workloads.zip
+          tar -xf workloads.tar.zstd
+          mv images workloads/
+
+  check-configs:
+    runs-on: ubuntu-latest
+    continue-on-error: false
+    name: Check All Configs
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    - name: Setup env
+      run: |
+        echo "NEMU_HOME=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+    - name: bump configs
+      run: |
+        bash ./scripts/bump_configs.sh
+    - name: check
+      run: |
+        if [ -n "$(git status --porcelain)" ]; then
+          echo "Please run 'bash ./scripts/bump_configs.sh' manually"
+          exit 1
+        fi
+
+  compilation-all:
+    strategy:
+      matrix:
+        container-version: ['ubuntu-22.04', 'ubuntu-24.04']
+      fail-fast: false
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/openxiangshan/xs-env:${{ matrix.container-version }}
+    continue-on-error: false
+    name: Compilation - all configs
+    timeout-minutes: 60
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    - name: Setup env
+      run: |
+        echo "NEMU_HOME=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+    - name: Try to compile
+      id: list_configs
+      run: |
+        bash ./scripts/compilation-test.sh
+
+  basic-xiangshan:
+    needs: fetch-workloads
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/openxiangshan/xs-env:ubuntu-24.04
+    continue-on-error: false
+    timeout-minutes: 10
+    name: Basic - XiangShan
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+      - name: Restore cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.CI_WORKLOADS }}
+          key: ${{ needs.fetch-workloads.outputs.release-url }}
+      - name: Setup env
+        run: |
+          echo "NEMU_HOME=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+      - name: Initialize ready-to-run
+        run: |
+          make init-ready-to-run
+      - name: Build NEMU interpreter for XS
+        run: |
+          make riscv64-xs_defconfig
+          make -j `nproc`
+      - name: System - linux-hello-opensbi
+        run: |
+          ./build/riscv64-nemu-interpreter -b ${CI_WORKLOADS}/linux/hello/fw_payload.bin
+      - name: System - KVM
+        run: |
+          ./build/riscv64-nemu-interpreter -b ${CI_WORKLOADS}/linux/kvmtool/fw_payload.bin
+      - name: test cpt taking and restoring using zstd format
+        run: |
+          make clean-all
+          make riscv64-xs-cpt_defconfig
+          make -j `nproc`
+          make -C resource/gcpt_restore
+          # take cpt, and put cpt in output_top/test/linux
+          bash ./scripts/take_zstd.sh ${CI_WORKLOADS}/linux/coremark-pro/fw_payload.bin output_top
+          make clean-all
+
+          # restore cpt
+          make riscv64-xs-diff-spike_defconfig
+          make -j `nproc`
+          bash ./scripts/restore_zstd.sh
+          make clean-all
+
+#          make riscv64-xs-cpt-with-flash_defconfig
+#          make -j `nproc`
+#          bash ./scripts/take_zstd_into_flash.sh
+#          make clean-all
+
+          # restore cpt
+#          git submodule update --init --depth=1 ready-to-run
+#          make riscv64-xs-diff-spike-withflash_defconfig
+#          make gcpt_restore_bin
+#          make -j `nproc`
+#          bash ./scripts/restore_zstd_into_flash.sh
+#          make clean-all
+
+  basic-nutshell:
+    needs: fetch-workloads
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/openxiangshan/xs-env:ubuntu-24.04
+    continue-on-error: false
+    timeout-minutes: 10
+    name: Basic - NutShell
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+      - name: Restore cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.CI_WORKLOADS }}
+          key: ${{ needs.fetch-workloads.outputs.release-url }}
+      - name: Setup env
+        run: |
+          echo "NEMU_HOME=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+      - name: Initialize ready-to-run
+        run: |
+          make init-ready-to-run
+      - name: Build NEMU interpreter
+        run: |
+          make riscv64-nutshell_defconfig
+          make -j
+      - name: Replace workload DTB
+        run: |
+          cd ${CI_WORKLOADS}/linux/hello
+          dd conv=notrunc bs=1024 seek=1536 if=dt/nutshell.dtb of=fw_payload.bin
+      - name: test boot linux
+        run: |
+          ./build/riscv64-nemu-interpreter -b ${CI_WORKLOADS}/linux/hello/fw_payload.bin
+
+  diff-spike-guard:
+    # NEMU should report error if RVV agnostic is enabled when comparing against Spike ref; It should crash in the expected way
+    needs: fetch-workloads
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/openxiangshan/xs-env:ubuntu-24.04
+    continue-on-error: false
+    name: Diff with Spike - Guard
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+
+      - name: Restore cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.CI_WORKLOADS }}
+          key: ${{ needs.fetch-workloads.outputs.release-url }}
+
+      - name: Setup env
+        run: |
+          echo "NEMU_HOME=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+
+      - name: Initialize ready-to-run
+        run: |
+          make init-ready-to-run
+
+      - name: Build NEMU with V extension and agnostic
+        run: |
+          make riscv64-xs-diff-spike-agnostic_defconfig
+          make -j
+
+      - name: Run rvv-vector-tests with Spike DiffTest, expect error
+        run: |
+          set -x
+          ./build/riscv64-nemu-interpreter -b --diff ${SPIKE_SO} ${CI_WORKLOADS}/am/riscv-vector-tests/bin/vfadd.vf-0.bin > crash.log  || exit_code=$?
+          if [ ${exit_code} -eq 0 ]; then echo "Difftest is broken, it should report error!" exit 1; fi
+          match=$(grep "wrong.*=.*ffff" crash.log -c)
+          if [ ${match} -eq 0 ]; then echo "Difftest is broken, it should report at least one agnostic related difference!" exit 1; fi
+          set +x
+          echo "::group::NEMU-output"
+          cat crash.log
+          echo "::endgroup::"
+
+  diff-spike-basic:
+    needs: fetch-workloads
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/openxiangshan/xs-env:ubuntu-24.04
+    continue-on-error: false
+    name: Diff with Spike - Basic & System
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+
+      - name: Restore cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.CI_WORKLOADS }}
+          key: ${{ needs.fetch-workloads.outputs.release-url }}
+
+      - name: Setup env
+        run: |
+          echo "NEMU_HOME=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+
+      - name: Initialize ready-to-run
+        run: |
+          make init-ready-to-run
+
+      - name: Build NEMU interpreter for diff with spike
+        run: |
+          make riscv64-xs-diff-spike_defconfig
+          make -j
+
+      - name: Basic - cputest
+        env:
+          dir_tests: ${{ env.CI_WORKLOADS }}/am/cputest/bin/
+        run: |
+          find ${{ env.dir_tests }} -type f | while read -r test_bin; do
+            echo ::group::$(basename $test_bin)
+            ./build/riscv64-nemu-interpreter -b --diff ${SPIKE_SO} ${test_bin}
+            echo "::endgroup::"
+          done
+
+      - name: Basic - riscv-tests
+        # failed at rv64mi-p-sd-misaligned.bin
+        env:
+          dir_tests: ${{ env.CI_WORKLOADS }}/am/riscv-tests/bin/
+          skip_tests: |
+            rv64mi-p-ld-hd-misaligned.bin
+            rv64mi-p-ld-misaligned.bin
+            rv64mi-p-lh-hd-misaligned.bin
+            rv64mi-p-lh-misaligned.bin
+            rv64mi-p-lw-hd-misaligned.bin
+            rv64mi-p-lw-misaligned.bin
+            rv64mi-p-sd-hd-misaligned.bin
+            rv64mi-p-sd-misaligned.bin
+            rv64mi-p-sh-hd-misaligned.bin
+            rv64mi-p-sh-misaligned.bin
+            rv64mi-p-sw-hd-misaligned.bin
+            rv64mi-p-sw-misaligned.bin
+        run: |
+          readarray -t skip_tests_array <<< "$skip_tests"
+          find ${{ env.dir_tests }} -type f -name "*.bin" | while read -r test_bin; do
+            if [[ " ${skip_tests_array[@]} " =~ " $(basename $test_bin) " ]]; then
+              echo "$test_bin skiped."
+              continue;
+            fi
+            echo ::group::$(basename $test_bin)
+            ./build/riscv64-nemu-interpreter -b --diff ${SPIKE_SO} ${test_bin}
+            echo "::endgroup::"
+          done
+
+      - name: Basic - rvv-test
+        env:
+          # These tests are included in the workloads on the `nemu` runner.
+          # But the newly built versions (built with `workload-builder`) of them fail on NEMU.
+          # So skip them temporarily.
+          skip_tests: |
+            vsetvli-0.bin
+            vsetivli-0.bin
+        run: |
+          readarray -t skip_tests_array <<< "$skip_tests"
+          find "${CI_WORKLOADS}/am/riscv-vector-tests/bin" -type f -name "*.bin" | while read -r test_bin; do
+            if [[ " ${skip_tests_array[@]} " =~ " $(basename $test_bin) " ]]; then
+              echo "$test_bin skiped."
+            else
+              echo ::group::$(basename $test_bin)
+              ./build/riscv64-nemu-interpreter -b --diff ${SPIKE_SO} ${test_bin}
+              echo "::endgroup::"
+            fi
+          done
+
+      - name: Basic - misc-tests
+        env:
+          tests: |
+            am/misc-tests/bin/bitmanip.bin
+            am/coremark/bin/coremark-riscv64-xs-rv64gc-o2.bin
+            am/coremark/bin/coremark-riscv64-xs-rv64gc-o3.bin
+            am/coremark/bin/coremark-riscv64-xs-rv64gcb-o3.bin
+            am/misc-tests/bin/amtest-riscv64-xs.bin
+            am/misc-tests/bin/aliastest-riscv64-xs.bin
+            am/misc-tests/bin/softprefetchtest-riscv64-xs.bin
+            am/misc-tests/bin/zacas-riscv64-xs.bin
+        run: |
+          for test_bin in $tests; do
+            echo ::group::$test_bin
+            ./build/riscv64-nemu-interpreter -b --diff ${SPIKE_SO} ${CI_WORKLOADS}/${test_bin}
+            echo "::endgroup::"
+          done
+
+      - name: System - linux
+        run: |
+          ./build/riscv64-nemu-interpreter -b --diff ${SPIKE_SO} ${CI_WORKLOADS}/linux/hello/fw_payload.bin
+
+      - name: System - KVM
+        run: |
+          ./build/riscv64-nemu-interpreter -b --diff ${SPIKE_SO} ${CI_WORKLOADS}/linux/kvmtool/fw_payload.bin
+
+  diff-spike-advanced:
+    needs: fetch-workloads
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/openxiangshan/xs-env:ubuntu-24.04
+    continue-on-error: false
+    name: Diff with Spike - Advanced
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+
+      - name: Restore cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.CI_WORKLOADS }}
+          key: ${{ needs.fetch-workloads.outputs.release-url }}
+
+      - name: Setup env
+        run: |
+          echo "NEMU_HOME=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+
+      - name: Initialize ready-to-run
+        run: |
+          make init-ready-to-run
+
+      - name: Build NEMU interpreter for diff with spike
+        run: |
+          make clean-all
+          make riscv64-xs-diff-spike_defconfig
+          make -j
+
+      - name: Run coremark-pro with Spike DiffTest
+        run: |
+          ./build/riscv64-nemu-interpreter -b --diff ${SPIKE_SO} ${CI_WORKLOADS}/linux/coremark-pro/fw_payload.bin -I 400000000
+
+      - name: Run rvv-bench with Spike DiffTest
+        run: |
+          ./build/riscv64-nemu-interpreter -b --diff ${SPIKE_SO} ${CI_WORKLOADS}/linux/rvv-bench/fw_payload.bin -I 400000000
+
+  performance:
+    needs: fetch-workloads
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/openxiangshan/xs-env:ubuntu-24.04
+    continue-on-error: false
+    name: Performance Tests
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+
+      - name: Restore Workloads
+        id: cache-workloads
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.CI_WORKLOADS }}
+          key: ${{ needs.fetch-workloads.outputs.release-url }}
+
+      - name: Restore DynamoRIO
+        id: cache-dynamorio
+        uses: actions/cache@v4
+        with:
+          path: DynamoRIO-Linux-11.3.0-1
+          key: DynamoRIO-Linux-11.3.0-extracted
+
+      - name: Download and extract
+        if: steps.cache-dynamorio.outputs.cache-hit != 'true'
+        run: |
+          wget https://github.com/DynamoRIO/dynamorio/releases/download/release_11.3.0-1/DynamoRIO-Linux-11.3.0.tar.gz -O - | tar -zxf -
+      
+      - name: Setup env
+        run: |
+          echo "NEMU_HOME=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+
+      - name: Build NEMU interpreter for XS in interpreter mode
+        run: |
+          make riscv64-xs_defconfig
+          sed -i 's/CONFIG_CC_NATIVE_ARCH=y/# CONFIG_CC_NATIVE_ARCH is not set/g' .config
+          sed -i 's/CONFIG_CC_OPT_FLAGS=""/CONFIG_CC_OPT_FLAGS="-march=x86-64-v3 -mtune=generic -ftree-vectorize"/g' .config
+          make -j `nproc`
+
+      - name: Basic - misc-tests
+        env:
+          tests: |
+            am/misc-tests/bin/bitmanip.bin
+            am/coremark/bin/coremark-riscv64-xs-rv64gc-o2.bin
+            am/coremark/bin/coremark-riscv64-xs-rv64gc-o3.bin
+            am/coremark/bin/coremark-riscv64-xs-rv64gcb-o3.bin
+            am/misc-tests/bin/amtest-riscv64-xs.bin
+            am/misc-tests/bin/aliastest-riscv64-xs.bin
+            am/misc-tests/bin/softprefetchtest-riscv64-xs.bin
+            am/misc-tests/bin/zacas-riscv64-xs.bin
+        run: |
+          echo -e "### NEMU Performance Results\n\n| Test | Instructions Executed | Estimated Host Throughput (instr/s) | Actual NEMU Throughput (instr/s) |\n|------|-----------------------|-------------------------------------|-------------------------------|" > performance_results.md
+          for test_bin in $tests; do
+            echo ::group::$test_bin
+            result=$(./DynamoRIO-Linux-11.3.0-1/bin64/drrun -c ./DynamoRIO-Linux-11.3.0-1/samples/bin64/libinscount.so -- \
+            ./build/riscv64-nemu-interpreter -b ${CI_WORKLOADS}/${test_bin} | strings)
+            result_native=$(./build/riscv64-nemu-interpreter -b ${CI_WORKLOADS}/${test_bin} | strings)
+            actual_throughput=$(echo "$result_native" | grep "simulation frequency" | tail -n 1 | cut -d '=' -f2 | cut -d ' ' -f2 | tr -d ', ')
+            guest_instr_count=$(echo "$result" | grep "total guest instructions" | tail -n 1 | cut -d '=' -f2 | tr -d ', ')
+            host_instr_count=$(echo "$result" | grep "Instrumentation results:" | tail -n 1 | cut -d ' ' -f3)
+            estimate_host_ipc=2.5
+            # Calculate host throughput per second with 4GHz and IPC=2.5
+            est_throughput=$(python3 -c "print(4e9 * $estimate_host_ipc / $host_instr_count * $guest_instr_count)")
+            python3 -c "print('| {} | {:.3e} | {:.3e} | {:.3e} |'.format('$(basename $test_bin)', $host_instr_count, $est_throughput, $actual_throughput))" >> performance_results.md
+            echo "::endgroup::"
+          done
+
+      - name: System - linux
+        run: |
+          result=$(./DynamoRIO-Linux-11.3.0-1/bin64/drrun -c ./DynamoRIO-Linux-11.3.0-1/samples/bin64/libinscount.so -- \
+          ./build/riscv64-nemu-interpreter -b ${CI_WORKLOADS}/linux/hello/fw_payload.bin | strings)
+          result_native=$(./build/riscv64-nemu-interpreter -b ${CI_WORKLOADS}/linux/hello/fw_payload.bin | strings)
+          actual_throughput=$(echo "$result_native" | grep "simulation frequency" | tail -n 1 | cut -d '=' -f2 | cut -d ' ' -f2 | tr -d ', ')
+          guest_instr_count=$(echo "$result" | grep "total guest instructions" | tail -n 1 | cut -d '=' -f2 | tr -d ', ')
+          host_instr_count=$(echo "$result" | grep "Instrumentation results:" | tail -n 1 | cut -d ' ' -f3)
+          estimate_host_ipc=2.5
+          # Calculate host throughput per second with 4GHz and IPC=2.5
+          est_throughput=$(python3 -c "print(4e9 * $estimate_host_ipc / $host_instr_count * $guest_instr_count)")
+          python3 -c "print('| linux-hello | {:.3e} | {:.3e} | {:.3e} |'.format($host_instr_count, $est_throughput, $actual_throughput))" >> performance_results.md
+          echo -e "\n\n* Host throughput is estimated based on 4GHz CPU frequency and IPC=2.5. \n* Actual throughput may vary based on the host CPU performance." >> performance_results.md
+      
+      - name: Record PR number
+        if: github.event_name == 'pull_request'
+        env:
+          PR_NUMBER: ${{ github.event.number }}
+        run: |
+          echo -n $PR_NUMBER > PR_NUMBER.txt
+      
+      - name: Save performance results artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: performance-results
+          if-no-files-found: ignore
+          path: |
+            performance_results.md
+            PR_NUMBER.txt
+
+  build-so:
+    name: Build NEMU Difftest Shared Objects
+    uses: ./.github/workflows/build.yml

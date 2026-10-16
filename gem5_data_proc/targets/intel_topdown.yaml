@@ -1,0 +1,116 @@
+domain: topdown
+
+defaults:
+  gem5_cpu_prefix: system.cpu
+  perf: "\\[PERF \\]\\[time=\\s*\\d+\\]"
+
+groups:
+  intel_topdown:
+    base_gem5: "{gem5_cpu_prefix}"
+    xs_fmt: "{perf} .*: {stat},\\s+(\\d+)"
+    gem5:
+      inst_spec: "iew.dispatchedInsts"
+      fetch_bubble: "fetch.fetchBubbles"
+      fetch_bubble_eq_max: "fetch.fetchBubbles_max"
+      total_squash: "commit.totalSquash"
+      recovery_bubble: "commit.recovery_bubble"
+      exec_stall_cycle: "scheduler.exec_stall_cycle"
+      mem_stall_any_load: "scheduler.memstall_any_load"
+      mem_stall_store: "scheduler.memstall_any_store"
+      mem_stall_l1miss: "scheduler.memstall_l1miss"
+      mem_stall_l2miss: "scheduler.memstall_l2miss"
+      mem_stall_l3miss: "scheduler.memstall_l3miss"
+    gem5_regex:
+      br_mis_pred: 'system\.cpu\.commit\.branchMispredicts(?:::total)?'
+      iew_br_mis_pred: 'system\.cpu\.iew\.branchMispredicts(?:::total)?'
+    xs:
+      # Recent RTL no longer exports these two legacy Decode counters.
+      # Keep missing values as NaN; rename recovery_stall is not equivalent.
+      inst_spec: inst_spec
+      fetch_bubble: if_fetch_bubble
+      fetch_bubble_eq_max: if_fetch_bubble_eq_max
+      br_mis_pred: br_mis_pred
+      total_squash: total_flush
+      recovery_bubble: recovery_bubble
+      exec_stall_cycle: exec_stall_cycle
+      mem_stall_any_load: mem_stall_anyload
+      mem_stall_store: mem_stall_store
+      mem_stall_l1miss: mem_stall_l1miss
+      mem_stall_l2miss: mem_stall_l2miss
+      mem_stall_l3miss: mem_stall_l3miss
+    derived_gem5:
+      # Match redirect acceptance to totalSquash and use the measured ROI.
+      baseRetiring: "committedInsts / (8 * cycles)"
+      badSpecBound: "(inst_spec - committedInsts + recovery_bubble) / (8 * cycles)"
+      branchMissPrediction: "((inst_spec - committedInsts + recovery_bubble) / (8 * cycles)) * br_mis_pred / total_squash"
+      machineClears: "((inst_spec - committedInsts + recovery_bubble) / (8 * cycles)) * (1 - br_mis_pred / total_squash)"
+    derived_xs:
+      # DefaultConfig width=8. Full bad-speculation accounting still requires
+      # compatible speculative/retired slot counters and recovery units in RTL.
+      baseRetiring: "committedInsts / (8 * cycles)"
+      badSpecBound: "(inst_spec - committedInsts + recovery_bubble) / (8 * cycles)"
+      branchMissPrediction: "((inst_spec - committedInsts + recovery_bubble) / (8 * cycles)) * br_mis_pred / total_squash"
+      machineClears: "((inst_spec - committedInsts + recovery_bubble) / (8 * cycles)) * (1 - br_mis_pred / total_squash)"
+    derived:
+      frontendBound: "fetch_bubble / (8 * cycles)"
+      frontendLatencyBound: "fetch_bubble_eq_max / cycles"
+      frontendBandwidthBound: "fetch_bubble / (8 * cycles) - fetch_bubble_eq_max / cycles"
+      backendBound: "1 - (fetch_bubble + inst_spec + recovery_bubble) / (8 * cycles)"
+      coreBound: "(exec_stall_cycle - mem_stall_any_load - mem_stall_store) / cycles"
+      memoryBound: "(mem_stall_any_load + mem_stall_store) / cycles"
+      l1Bound: "(mem_stall_any_load - mem_stall_l1miss) / cycles"
+      l2Bound: "(mem_stall_l1miss - mem_stall_l2miss) / cycles"
+      l3Bound: "(mem_stall_l2miss - mem_stall_l3miss) / cycles"
+      memBound: "mem_stall_l3miss / cycles"
+      storeBound: "mem_stall_store / cycles"
+
+  old_topdown:
+    base_gem5: "system.cpu.iew"
+    xs_fmt: "{perf} .*: {stat},\\s+(\\d+)"
+    gem5:
+      NoStall: "dispatchStallReason::NoStall"
+      IcacheStall: "dispatchStallReason::IcacheStall"
+      ITlbStall: "dispatchStallReason::ITlbStall"
+      DTlbStall: "dispatchStallReason::DTlbStall"
+      BpStall: "dispatchStallReason::BpStall"
+      IntStall: "dispatchStallReason::IntStall"
+      TrapStall: "dispatchStallReason::TrapStall"
+      FTQBubble: "dispatchStallReason::FTQBubble"
+      FetchFragStall: "dispatchStallReason::FetchFragStall"
+      OtherFetchStall: "dispatchStallReason::OtherFetchStall"
+      OtherFragStall: "dispatchStallReason::OtherFragStall"
+      SquashStall: "dispatchStallReason::SquashStall"
+      FetchBufferInvalid: "dispatchStallReason::FetchBufferInvalid"
+      InstMisPred1: "dispatchStallReason::InstMisPred"
+      InstSquashed1: "dispatchStallReason::InstSquashed"
+      SerializeStall: "dispatchStallReason::SerializeStall"
+      ScalarLongExecute: "dispatchStallReason::ScalarLongExecute"
+      VectorLongExecute: "dispatchStallReason::VectorLongExecute"
+      InstNotReady: "dispatchStallReason::InstNotReady"
+      LoadL1Bound: "dispatchStallReason::LoadL1Bound"
+      LoadL2Bound: "dispatchStallReason::LoadL2Bound"
+      LoadL3Bound: "dispatchStallReason::LoadL3Bound"
+      LoadMemBound: "dispatchStallReason::LoadMemBound"
+      StoreL1Bound: "dispatchStallReason::StoreL1Bound"
+      StoreL2Bound: "dispatchStallReason::StoreL2Bound"
+      StoreL3Bound: "dispatchStallReason::StoreL3Bound"
+      StoreMemBound: "dispatchStallReason::StoreMemBound"
+      MemSquashed: "dispatchStallReason::MemSquashed"
+      MemNotReady: "dispatchStallReason::MemNotReady"
+      MemCommitRateLimit: "dispatchStallReason::MemCommitRateLimit"
+      Atomic: "dispatchStallReason::Atomic"
+      OtherMemStall: "dispatchStallReason::OtherMemStall"
+      MemDQBandwidth: "dispatchStallReason::MemDQBandwidth"
+      IntDQBandwidth: "dispatchStallReason::IntDQBandwidth"
+      FVDQBandwidth: "dispatchStallReason::FVDQBandwidth"
+      VectorReadyButNotIssued: "dispatchStallReason::VectorReadyButNotIssued"
+      ScalarReadyButNotIssued: "dispatchStallReason::ScalarReadyButNotIssued"
+      ResumeUnblock: "dispatchStallReason::ResumeUnblock"
+      CommitSquash: "dispatchStallReason::CommitSquash"
+      ROBFull: "dispatchStallReason::ROBFull"
+      RegFull: "dispatchStallReason::RegFull"
+      OtherStall: "dispatchStallReason::OtherStall"
+      ControlRecovery: "dispatchStallReason::ControlRecovery"
+      MemVioRecovery: "dispatchStallReason::MemVioRecovery"
+      VPRecovery: "dispatchStallReason::VPRecovery"
+      TrapRecovery: "dispatchStallReason::TrapRecovery"

@@ -1,0 +1,66 @@
+name: CI
+
+on:
+
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+
+  prepare-sdk:
+    runs-on: ubuntu-latest
+    name: Prepare the buildroot SDK and source files
+    timeout-minutes: 10
+    steps:
+      - name: Fetch Repository
+        uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+      - name: Resolve buildroot version
+        id: buildroot
+        run: echo "version=$(make -s print-buildroot-version)" >> "$GITHUB_OUTPUT"
+      - name: Cache buildroot SDK
+        uses: actions/cache@v4
+        id: cache-buildroot
+        with:
+          path: build
+          key: ${{ steps.buildroot.outputs.version }}
+      - name: Download source tarballs
+        if: steps.cache-buildroot.outputs.cache-hit != 'true'
+        run: |
+          make source
+
+  build-all:
+    runs-on: ubuntu-latest
+    name: Build all testing workloads
+    needs: prepare-sdk
+    timeout-minutes: 120
+    steps:
+      - name: Fetch Repository
+        uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+      - name: Resolve buildroot version
+        id: buildroot
+        run: echo "version=$(make -s print-buildroot-version)" >> "$GITHUB_OUTPUT"
+      - name: Restore cache
+        uses: actions/cache@v4
+        with:
+          path: build
+          key: ${{ steps.buildroot.outputs.version }}
+      - name: Build all Workloads
+        run: |
+          make tarball
+          mkdir -p build/images
+          cp build/LibCheckpointAlpha/build/gcpt.bin build/images
+          cp build/opensbi/build/platform/generic/firmware/fw_jump.bin build/images
+          cp build/buildroot/output/images/Image build/images
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: nemu-workloads
+          path: |
+            build/workloads.tar.zstd
+            build/images

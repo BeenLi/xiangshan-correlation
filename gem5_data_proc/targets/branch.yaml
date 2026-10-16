@@ -1,0 +1,216 @@
+domain: bp
+
+defaults:
+  gem5_cpu_prefix: system.cpu
+  perf: "\\[PERF \\]\\[time=\\s*\\d+\\]"
+
+groups:
+  branch:
+    base_gem5: "{gem5_cpu_prefix}.branchPred"
+    xs_fmt: "{perf} .*\\.ftq.*: {stat},\\s+(\\d+)"
+    gem5:
+      # Correct-path committed mispredictions. Do not use O3
+      # commit.branchMispredicts here: that counter is updated on squash and
+      # includes branches that may not later commit.
+      BPAllWrong: branchClassCountsTotal
+      # committed stats
+      BpBWrong: "branchClassMisses::cond_branch"
+      BpIWrong: "branchClassMisses::indirect_jump"
+      BpCallWrong: "branchClassMisses::indirect_call"
+      BpRetWrong: "branchClassMisses::return"
+      # commit reason (strictly comparable with xs commit_conditional_branch_mispredicts_reason_TAGE)
+      BpBWrongReasonTAGE: "s3PredWrongTage"
+      # resolved stats
+      BpBWrong2: "controlSquashByClass::cond_branch"
+      BpDirectWrong2: "controlSquashByClass::direct_jump"
+      commitFsqEntryHasInsts: "commitFsqEntryHasInsts::mean"
+      predictionBlockedForUpdate: "system.cpu.branchPred.predictionBlockedForUpdate"
+      resolveQueueFull: "system.cpu.fetch.resolveQueueFullEvents"
+    gem5_regex:
+      # Match the scalar stat in single-thread runs and only ::total in SMT.
+      branches: 'system\.cpu\.commit\.branches(?:::total)?'
+    xs:
+      branches: commit_branch_num
+      BPAllWrong: commit_branch_mispredicts
+      BpBInsts: commit_branch_type_conditional
+      BpBWrong: commit_branch_mispredicts_type_conditional
+      BpBWrongReasonBTB: commit_conditional_branch_mispredicts_reason_BTB
+      BpBWrongReasonTAGE: commit_conditional_branch_mispredicts_reason_TAGE
+      BpBWrongReasonSC: commit_conditional_branch_mispredicts_reason_SC
+      BpIWrong: commit_branch_mispredicts_type_indirect
+      BpCallWrong: commit_branch_mispredicts_type_call
+      BpRetWrong: commit_branch_mispredicts_type_ret
+      resolveQueueFull: resolveQueueFull
+    derived:
+      cond_MPKI: "BpBWrong * 1000 / committedInsts"
+      branch_MPKI: "BPAllWrong * 1000 / committedInsts"
+      branch_mispredict_rate: "BPAllWrong / branches"
+
+  branch_reason:
+    base_gem5: "{gem5_cpu_prefix}.branchPred"
+    xs_fmt: "{perf} .*\\.ftq.*: {stat},\\s+(\\d+)"
+    gem5:
+      commit_branch_mispredicts_s1_source_Fallthrough: "s1PredWrongFallthrough"
+      commit_branch_mispredicts_s1_source_Ubtb: "s1PredWrongUbtb"
+      commit_branch_mispredicts_s1_source_Abtb: "s1PredWrongAbtb"
+      commit_branch_mispredicts_reason_BTB: "s3PredWrongMbtb"
+      commit_branch_mispredicts_reason_TAGE: "s3PredWrongTage"
+      commit_branch_mispredicts_reason_ITTAGE: "s3PredWrongIttage"
+      commit_branch_mispredicts_reason_RAS: "s3PredWrongRas"
+    xs:
+      commit_branch_mispredicts_s1_source_Fallthrough: commit_branch_mispredicts_s1_source_Fallthrough
+      commit_branch_mispredicts_s1_source_Ubtb_raw: commit_branch_mispredicts_s1_source_Ubtb
+      commit_branch_mispredicts_s1_source_UbtbUtage: commit_branch_mispredicts_s1_source_UbtbUtage
+      commit_branch_mispredicts_s1_source_Abtb_raw: commit_branch_mispredicts_s1_source_Abtb
+      commit_branch_mispredicts_s1_source_AbtbUtage: commit_branch_mispredicts_s1_source_AbtbUtage
+      commit_branch_mispredicts_reason_RAS: commit_branch_mispredicts_reason_RAS
+      commit_branch_mispredicts_reason_TAGE: commit_branch_mispredicts_reason_TAGE
+      commit_branch_mispredicts_reason_ITTAGE: commit_branch_mispredicts_reason_ITTAGE
+      commit_branch_mispredicts_reason_BTB: commit_branch_mispredicts_reason_BTB
+      commit_branch_mispredicts_reason_SC: commit_branch_mispredicts_reason_SC
+    derived_xs:
+      # RTL splits uTAGE-assisted S1 sources while gem5 keeps the underlying
+      # BTB component as the source. Recombine RTL before comparing.
+      commit_branch_mispredicts_s1_source_Ubtb: "commit_branch_mispredicts_s1_source_Ubtb_raw + commit_branch_mispredicts_s1_source_UbtbUtage"
+      commit_branch_mispredicts_s1_source_Abtb: "commit_branch_mispredicts_s1_source_Abtb_raw + commit_branch_mispredicts_s1_source_AbtbUtage"
+    derived:
+      s1_source_final_wrong: "commit_branch_mispredicts_s1_source_Fallthrough + commit_branch_mispredicts_s1_source_Ubtb + commit_branch_mispredicts_s1_source_Abtb"
+      s1_source_final_wrong_MPKI: "s1_source_final_wrong * 1000 / committedInsts"
+
+
+  frontend:
+    base_gem5: "{gem5_cpu_prefix}"
+    xs_fmt: "{perf} .*\\.frontend.*: {stat},\\s+(\\d+)"
+    gem5:
+      fetch_nisn_mean: fetch.nisnDist::mean
+      fetch_nisn_0: fetch.nisnDist::0
+      fetch_nisn_total: fetch.nisnDist::total
+      icacheStallCycles: fetch.icacheStallCycles
+      fsqFullFetchHungry: branchPred.fsqFullFetchHungry
+      decodeStallRate: fetch.decodeStallRate
+      fsqNotValid: branchPred.fsqNotValid
+      ftqNotValid: branchPred.ftqNotValid
+      fsqFullCannotEnq: branchPred.fsqFullCannotEnq
+    xs:
+      validInstrMean: validInstrsDist_mean
+      validInstr0: validInstrsDist_0_1
+      stallCycles_fetch: stallCycles_fetch
+      stallCycles_fetch_ftqNotvalid: stallCycles_fetch_ftqNotvalid
+      stallCycles_fetch_ifuNotReady: stallCycles_fetch_ifuNotReady
+      stallCycles_decodeFull: stallCycles_decodeFull
+      stallCycles_ibufferFull: stallCycles_ibufferFull
+      squashCycles: squashCycles
+      train_stall: train_stall
+
+
+  override:
+    base_gem5: "{gem5_cpu_prefix}.branchPred"
+    xs_fmt: "{perf} .*\\.frontend.*\\.bpu: {stat},\\s+(\\d+)"
+    gem5:
+      overrideCount: overrideCount
+      overrideBubbleNum: overrideBubbleNum
+    xs:
+      overrideCount: s3Override
+    derived:
+      override_MPKI: "overrideCount * 1000 / committedInsts"
+      override_bubbles_per_event: "overrideBubbleNum / overrideCount"
+
+  abtb:
+    base_gem5: "{gem5_cpu_prefix}.branchPred"
+    gem5:
+      gem5S1SelectUbtb: abtb.S0PredUseUBTB
+      gem5S1SelectAbtb: abtb.S0PredUseABTB
+      gem5S1SelectMiss: abtb.S0Predmiss
+      abtbLookupMiss: abtb.predMiss
+      abtbHitEntries: abtb.predHit
+    xs:
+      predictionCount: "{perf} .*\\.bpu\\.abtb: predict_num,\\s+(\\d+)"
+      abtbLookupHit: "{perf} .*\\.bpu\\.abtb: predict_hit,\\s+(\\d+)"
+      abtbLookupMiss: "{perf} .*\\.bpu\\.abtb: predict_miss,\\s+(\\d+)"
+      abtbHitEntries: "{perf} .*\\.bpu\\.abtb: predict_hit_entry_num,\\s+(\\d+)"
+      rtlS1TakenUbtb: "{perf} .*\\.frontend.*\\.bpu: s1_use_ubtb,\\s+(\\d+)"
+      rtlS1TakenAbtb: "{perf} .*\\.frontend.*\\.bpu: s1_use_abtb,\\s+(\\d+)"
+      rtlS1TakenAbtbUtage: "{perf} .*\\.frontend.*\\.bpu: s1_use_abtb_microTage,\\s+(\\d+)"
+      rtlS1FallThrough: "{perf} .*\\.frontend.*\\.bpu: s1_use_fallThrough,\\s+(\\d+)"
+    derived_gem5:
+      predictionCount: "gem5S1SelectUbtb + gem5S1SelectAbtb + gem5S1SelectMiss"
+      # ABTB is looked up for each S1 request, so its hit-event count is the
+      # total lookup count minus lookup misses. This remains valid across the
+      # old uBTB-first and new ABTB-exclusive arbitration policies.
+      abtbLookupHit: "predictionCount - abtbLookupMiss"
+    derived_xs:
+      rtlS1TakenAbtbAll: "rtlS1TakenAbtb + rtlS1TakenAbtbUtage"
+    derived:
+      abtbLookupHitRate: "abtbLookupHit / predictionCount"
+      abtbEntriesPerHit: "abtbHitEntries / abtbLookupHit"
+      overrideRate: "overrideCount / predictionCount"
+
+  tage:
+    base_gem5: "{gem5_cpu_prefix}.branchPred.tage"
+    xs_fmt: "{perf} .*\\.tage.*: {stat},\\s+(\\d+)"
+    gem5:
+      # Approximate mapping: gem5 updateMispred is mixed-granularity (entry/block)
+      tage_update_mispred: updateMispred
+      updateProviderNa: updateProviderNa
+      updateAltDiffers: updateAltDiffers
+      updateUseAltCorrect: updateUseAltCorrect
+      updateUseAltWrong: updateUseAltWrong
+      # Approximate mapping: model bank conflict vs RTL read conflict are close but not identical
+      updateBankConflict: updateBankConflict
+      resetUseful: updateResetU
+      allocateSuccess: updateAllocSuccess
+      # Stricter mapping to xs allocate_failure (per allocation request failure)
+      allocateFailure: updateAllocFailureNoValidTable
+      # Keep the old per-table-attempt counter for diagnostic use
+      allocateFailure_per_table_attempt: updateAllocFailure
+      # Approximate mapping: gem5 is fetchBlock-level bool, xs is branch-level popcount
+      tage_mispredict_diff: recomputedVsOriginalDiff
+    xs:
+      # Approximate counterpart for gem5 tage_update_mispred
+      tage_update_mispred: total_cond_mispredicted
+      # Approximate counterpart for gem5 updateBankConflict
+      updateBankConflict: read_conflict
+      tage_mispredict_diff: mispredict_diff
+      resetUseful: reset_useful
+      allocateSuccess: allocate_success
+      allocateFailure: allocate_failure
+
+  microtage:
+    base_gem5: "{gem5_cpu_prefix}.branchPred.microtage"
+    xs_fmt: "{perf} .*\\.utage.*: {stat},\\s+(\\d+)"
+    gem5:
+      # kmhv3 uses S3 teacher training. The resolved-update counters remain
+      # zero when usingS3Pred is enabled.
+      utage_update_use: s3UpdateUtageHit
+      utage_update_hit_wrong: s3UpdateUtageHitWrong
+      utage_update_use_abtb_wrong: s3UpdateUseAltWrong
+      condPredwrong: condPredwrong
+      condCorrect: condCorrect
+    xs:
+      utage_update_use: use_microtage
+      utage_update_hit_wrong: train_hit_mispred
+      utage_update_use_abtb_wrong: train_miss_hit_mispred
+    derived:
+      # RTL counts one mismatch event per trained block, while gem5 currently
+      # increments per mismatching conditional entry. This is therefore a
+      # close diagnostic rather than a bit-exact equality.
+      utage_teacher_wrong_rate: "utage_update_hit_wrong / utage_update_use"
+      utage_use_rate: "utage_update_use / predictionCount"
+      utage_base_wrong_rate: "utage_update_use_abtb_wrong / predictionCount"
+      microtage_MPKI: "condPredwrong * 1000 / committedInsts"
+      cond_wrong_rate: condPredwrong / (condCorrect + condPredwrong)
+
+  mbtb:
+    base_gem5: "{gem5_cpu_prefix}.branchPred.mbtb"
+    xs_fmt: "{perf} .*: {stat},\\s+(\\d+)"
+    gem5:
+      mbtb_update_miss: updateMiss
+      predHit: predHit
+      updateTotal: updateTotal
+      predMiss: predMiss
+    xs:
+      predHit: pred_hit
+      updateTotal: train_write_new_entry
+      predMiss: pred_miss
+      train_has_mispredict: train_has_mispredict
+      train_mispredict_conditional_because_mbtb_miss: train_mispredict_conditional_because_mbtb_miss

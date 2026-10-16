@@ -1,0 +1,1 @@
+litmus-tests-riscv-2C.tar.gz https://github.com/OpenXiangShan/litmus-tests-riscv/releases/download/litmus-tests-20251129/litmus-tests-riscv-2C.tar.gz 425b614b30d90a70f12d423bae1e3cdb1894c878b8a34e5a997ff9218bb8aabc
