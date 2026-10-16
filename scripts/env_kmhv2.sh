@@ -1,5 +1,5 @@
 # Environment for XS-GEM5 KMH-V2 (tag KMH-V2, d11fc1cb55) + NEMU ref (master d6fb8ed4)
-export CMODEL_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+export CMODEL_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 export gem5_home=$CMODEL_ROOT/GEM5-XS
 export NEMU_HOME=$CMODEL_ROOT/NEMU
 export GCBV_REF_SO=$NEMU_HOME/build/riscv64-nemu-interpreter-so

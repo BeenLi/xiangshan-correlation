@@ -8,7 +8,7 @@
 # cycle, so spreading them across nodes slows simulation down a lot.
 #   NUMA_NODE=<n>    force a node instead of auto-selecting
 #   MIN_FREE_MB=<m>  minimum free memory for auto-selection (default 16384)
-source "$(dirname "$0")/../env_kmhv2.sh"
+source "$(dirname "$0")/env_kmhv2.sh"
 CK=$1; D=$2
 if [ -z "$CK" ] || [ -z "$D" ]; then
   echo "usage: $0 <checkpoint.zstd> <out_dir>" >&2; exit 2

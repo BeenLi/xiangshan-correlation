@@ -2,6 +2,10 @@
 
 XiangShan 昆明湖 V2 RTL 与 XS-GEM5 的 correlation 工作区。版本、目录结构和常用命令见 `README.md`。
 
+## 脚本位置
+
+自己写的脚本（编译、运行、生成检查点、环境设置等）一律放在 `scripts/`，不要放进 GEM5-XS、XiangShan 等组件目录。脚本用自身位置定位仓库根目录，例如 `$(dirname "$0")/..`，不要写绝对路径。
+
 ## 检查点归档命名规则
 
 生成 SimPoint 检查点时，`generate_checkpoint.py --archive-id` 的值必须按以下格式命名：

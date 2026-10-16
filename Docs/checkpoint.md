@@ -28,7 +28,7 @@ workload-builder            NEMU-cpt              SimPoint             NEMU-cpt
                               GEM5 kmhv2.py 恢复                         RTL EMU 恢复
 ```
 
-后三步由 `minjie-playground/scripts/checkpoint/generate_checkpoint.py` 一次完成。CoreMark 的封装脚本是 `checkpoints/gen_coremark_cpt.sh`。
+后三步由 `minjie-playground/scripts/checkpoint/generate_checkpoint.py` 一次完成。CoreMark 的封装脚本是 `scripts/gen_coremark_cpt.sh`。
 
 ## 3. 生成
 
@@ -163,7 +163,7 @@ CFLAGS="-DCONFIG_CLINT_MMIO=0x38000000 -DCONFIG_DRAM_BASE=0x80000000" make CROSS
 ### 5.3 在 RTL 上恢复
 
 ```bash
-$CMODEL_ROOT/runs/run_rtl_ckpt.sh <ckpt.zstd> <输出目录>
+$CMODEL_ROOT/scripts/run_rtl_ckpt.sh <ckpt.zstd> <输出目录>
 ```
 
 脚本实际执行的是：
@@ -181,7 +181,7 @@ numactl --cpunodebind=<节点> --membind=<节点> $NOOP_HOME/build/emu -i <ckpt.
 ### 5.4 在 GEM5 上恢复
 
 ```bash
-source $CMODEL_ROOT/env_kmhv2.sh
+source $CMODEL_ROOT/scripts/env_kmhv2.sh
 export GCB_RESTORER=$CMODEL_ROOT/checkpoints/restorers/LibCheckpointAlpha-gem5-kmhv2/build/gcpt.bin
 $gem5_home/build/RISCV/gem5.opt -d m5out $gem5_home/configs/example/kmhv2.py --generic-rv-cpt=<ckpt.zstd> --gcpt-restorer-size-limit=0x1000
 ```

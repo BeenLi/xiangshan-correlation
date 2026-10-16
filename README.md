@@ -9,8 +9,8 @@ xiangshan-correlation/
 ├── README.md
 ├── AGENTS.md             # 代理工具读取的约定，如检查点命名规则
 ├── Docs/                 # 说明文档：difftest.md 讲 difftest，checkpoint.md 讲检查点的生成与恢复，upstream-versions.txt 记录各组件的上游提交
-├── env_kmhv2.sh          # 统一环境：gem5、NEMU、以后的 EMU
-├── scripts/hooks/        # 仓库的 git hook，拒绝提交嵌套的 git 仓库
+├── scripts/              # 所有自写脚本，见下文“脚本”
+│   └── hooks/            # 仓库的 git hook，拒绝提交嵌套的 git 仓库
 ├── GEM5-XS/              # XS-GEM5，KMH-V2 标签
 ├── NEMU/                 # NEMU，gem5 difftest 参考模型
 ├── XiangShan/            # XiangShan RTL，kunminghu-v2
@@ -19,7 +19,7 @@ xiangshan-correlation/
 ├── NEMU-cpt/             # NEMU master 的另一份源码，用于生成检查点
 ├── workload-builder/     # 把程序和 Linux 打包成 NEMU 可启动的镜像
 ├── minjie-playground/    # 只用其中 scripts/checkpoint，未拉子模块
-├── checkpoints/          # SimPoint 检查点、生成脚本、GEM5 专用恢复程序(LibCheckpointAlpha-gem5-kmhv2)
+├── checkpoints/          # SimPoint 检查点、GEM5 专用恢复程序(LibCheckpointAlpha-gem5-kmhv2)
 └── runs/
     ├── gem5-kmhv2/<workload>/
     └── rtl-kmhv2/<workload>/
@@ -27,13 +27,26 @@ xiangshan-correlation/
 
 GEM5 和 RTL 在同一负载上的结果，按相同的负载名并排放在 `runs/` 下，方便成对对比。
 
+## 脚本
+
+自己写的脚本统一放在 `scripts/`，不放进各组件目录。脚本按自身位置找到仓库根目录，不写绝对路径。
+
+| 脚本 | 作用 |
+|---|---|
+| `env_kmhv2.sh` | 统一环境，用 `source` 加载，设置 `CMODEL_ROOT`、`gem5_home`、`NEMU_HOME`、`NOOP_HOME` 等 |
+| `build_gem5_kmhv2.sh` | 编译 GEM5 |
+| `build_emu_kmhv2.sh` | 编译 RTL 的 EMU |
+| `build_coremark.sh` | 用 workload-builder 构建 Linux 版 CoreMark 镜像 |
+| `gen_coremark_cpt.sh` | 生成 CoreMark 的 SimPoint 检查点 |
+| `run_rtl_ckpt.sh` | 在 EMU 上跑一个检查点 |
+| `hooks/pre-commit` | 拒绝提交嵌套的 git 仓库 |
+
 ## 仓库维护
 
 所有组件都以普通文件的形式放在本仓库里，不用子模块，也不跟踪上游。各组件原来的嵌套子模块已经拍平，克隆下来就是完整源码。
 
 - 第一个提交是各组件的上游原样版本，打了标签 `kmhv2-baseline`。`git diff kmhv2-baseline` 能看到相对官方 KMH-V2 的全部本地改动。
 - 每个组件、每个嵌套子模块对应的上游提交记在 `Docs/upstream-versions.txt`，要查上游历史就去 GitHub 看对应提交。
-- 迁移前各组件的 `.git` 目录备份在 `../xiangshan-correlation.git-backup/`，相对路径不变。
 - 不要再运行 XiangShan 和 workload-builder 的 `make init`，也不要用 `git submodule`。workload-builder 里 gapbs、riscv-tests、nexus-am 等子模块当时没有拉取，需要时手动 clone 到对应位置，删掉其中的 `.git` 再提交。
 - 构建脚本可能自动 clone 依赖，例如 NEMU 的 `resource/` 下缺目录时会联网 clone。这类目录要删掉 `.git` 才能提交，否则 git 只会记下一个提交号。`scripts/hooks/pre-commit` 会拦住这种情况，新克隆仓库后先启用它：
 
@@ -79,13 +92,13 @@ V2 RTL 在 GEM5 标签之后，有几处改动可能影响对比：
 ## 使用方法
 
 ```bash
-source /home/data/wanli/Cmodel_projects/xiangshan-correlation/env_kmhv2.sh
+source /home/data/wanli/Cmodel_projects/xiangshan-correlation/scripts/env_kmhv2.sh
 ```
 
 编译 GEM5：
 
 ```bash
-cd $gem5_home && ./build_kmhv2.sh 2>&1 | tee build.log
+cd $gem5_home && $CMODEL_ROOT/scripts/build_gem5_kmhv2.sh 2>&1 | tee build.log
 ```
 
 编译 NEMU 参考模型：
@@ -99,7 +112,7 @@ cd $NEMU_HOME && make riscv64-gem5-ref_defconfig && make -j48
 编译 RTL 的 EMU，参数与 XiangShan 性能测试 CI 一致，但不做 PGO，也不编波形支持：
 
 ```bash
-cd $NOOP_HOME && ./build_emu_kmhv2.sh 2>&1 | tee build_emu.log
+cd $NOOP_HOME && $CMODEL_ROOT/scripts/build_emu_kmhv2.sh 2>&1 | tee build_emu.log
 ```
 
 在 GEM5 上跑 coremark，difftest 默认开启：
@@ -132,7 +145,7 @@ cd $CMODEL_ROOT/workload-builder && make linux/coremark -j32
 ```
 
 ```bash
-$CMODEL_ROOT/checkpoints/gen_coremark_cpt.sh
+$CMODEL_ROOT/scripts/gen_coremark_cpt.sh
 ```
 
 第二步用 NEMU-cpt 做剖析、SimPoint 聚类和取检查点，结果在 `checkpoints/<archive-id>/`。其中 `checkpoint/checkpoint.lst` 是 GEM5 批量脚本的格式，`json/` 是 gem5_data_proc 用的权重文件。间隔为 2000 万条指令，两边都用预热 2000 万条、采样 2000 万条。
@@ -154,7 +167,7 @@ export GCB_RESTORER=$CMODEL_ROOT/checkpoints/restorers/LibCheckpointAlpha-gem5-k
 $gem5_home/build/RISCV/gem5.opt -d m5out $gem5_home/configs/example/kmhv2.py --generic-rv-cpt=<ckpt.zstd> --gcpt-restorer-size-limit=0x1000
 ```
 
-RTL 侧用 `runs/run_rtl_ckpt.sh <ckpt.zstd> <out_dir>`，它调用 EMU 并加上 `-W 20000000 -I 40000000`。
+RTL 侧用 `scripts/run_rtl_ckpt.sh <ckpt.zstd> <out_dir>`，它调用 EMU 并加上 `-W 20000000 -I 40000000`。
 
 ## 已知结论：coremark 怎样用才能做 correlation
 
@@ -202,4 +215,4 @@ GEM5 的 IPC 比 RTL 高 1.35%。能对上的关键不是程序跑得长，而�
 - `~/.local/deps/nemu-tools` 里还有 SDL2 和 readline 的开发头文件，NEMU-cpt 编译需要。编译时设置 `C_INCLUDE_PATH` 为该目录下的 `usr/include` 和 `usr/include/x86_64-linux-gnu`，`LIBRARY_PATH` 为 `usr/lib/x86_64-linux-gnu`。
 - `~/.local/mill-0.12.3`：mill 0.12.3，从 Maven 中央仓库下载，SHA1 已校验。GitHub 发布页从服务器下载很慢，不要用。
 
-GEM5 从环境变量 `CCFLAGS_EXTRA` 和 `LINKFLAGS_EXTRA` 读取额外编译参数，不从 scons 命令行读取。`build_kmhv2.sh` 已处理好这一点。
+GEM5 从环境变量 `CCFLAGS_EXTRA` 和 `LINKFLAGS_EXTRA` 读取额外编译参数，不从 scons 命令行读取。`scripts/build_gem5_kmhv2.sh` 已处理好这一点。
