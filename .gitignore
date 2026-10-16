@@ -1,0 +1,15 @@
+# 各组件目录下原有的 .gitignore 照常生效，这里只放它们没覆盖到的规则。
+
+# 仿真结果：只跟踪运行脚本和 analysis/，GEM5 与 RTL 的原始输出不进仓库
+/runs/*/
+!/runs/analysis/
+
+# 检查点内存镜像体积大，不进仓库；元数据、聚类结果、BBV 和日志照常跟踪
+/checkpoints/*/checkpoint/
+
+# 原来写在各组件 .git/info/exclude 里的本地忽略规则
+/gem5_data_proc/.venv/
+/minjie-playground/**/__pycache__/
+/workload-builder/build_coremark.log
+/XiangShan/build_emu.log
+/checkpoints/restorers/LibCheckpointAlpha-gem5-kmhv2/*.log

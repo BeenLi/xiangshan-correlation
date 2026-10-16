@@ -1,0 +1,10 @@
+mode: file
+input_path: /home/data/wanli/Cmodel_projects/xiangshan-correlation/workload-builder/build/linux-workloads/coremark/fw_payload.bin
+name: coremark
+archive_id: coremark-linux-20m
+interval: 20000000
+copies: 1
+qemu_memory: auto
+max_k: None
+resume_after: None
+timestamp: 2026-09-24T09:48:23

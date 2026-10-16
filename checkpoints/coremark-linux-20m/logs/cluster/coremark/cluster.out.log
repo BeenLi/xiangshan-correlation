@@ -1,0 +1,229 @@
+Command-line: "/home/data/wanli/Cmodel_projects/xiangshan-correlation/NEMU-cpt/resource/simpoint/simpoint_repo/bin/simpoint -loadFVFile /home/data/wanli/Cmodel_projects/xiangshan-correlation/checkpoints/coremark-linux-20m/profiling/coremark/simpoint_bbv.gz -saveSimpoints /home/data/wanli/Cmodel_projects/xiangshan-correlation/checkpoints/coremark-linux-20m/cluster/coremark/simpoints0 -saveSimpointWeights /home/data/wanli/Cmodel_projects/xiangshan-correlation/checkpoints/coremark-linux-20m/cluster/coremark/weights0 -inputVectorsGzipped -maxK 30 -numInitSeeds 2 -iters 1000 -seedkm 171236 -seedproj 193132"
+Using these options (*** indicates user-specified option):
+*** -loadFVFile : /home/data/wanli/Cmodel_projects/xiangshan-correlation/checkpoints/coremark-linux-20m/profiling/coremark/simpoint_bbv.gz
+    -k : search
+*** -iters : 1000
+    -dim : 15
+*** -maxK : 30
+*** -numInitSeeds : 2
+    -coveragePct : 1
+    -bicThreshold : 0.9
+    -saveAll : false
+    -initkm : samp
+    -saveLabels : 
+*** -saveSimpoints : /home/data/wanli/Cmodel_projects/xiangshan-correlation/checkpoints/coremark-linux-20m/cluster/coremark/simpoints0
+*** -saveSimpointWeights : /home/data/wanli/Cmodel_projects/xiangshan-correlation/checkpoints/coremark-linux-20m/cluster/coremark/weights0
+    -saveVectorWeights : 
+    -saveInitCtrs : 
+    -saveFinalCtrs : 
+    -saveVectorsTxtFmt : 
+    -saveVectorsBinFmt : 
+    -saveProjMatrixTxtFmt : 
+    -saveProjMatrixBinFmt : 
+    -loadVectorsTxtFmt : 
+    -loadVectorsBinFmt : 
+    -loadProjMatrixTxtFmt : 
+    -loadProjMatrixBinFmt : 
+    -loadInitCtrs : 
+    -loadInitLabels : 
+    -loadVectorWeights : 
+*** -inputVectorsGzipped : true
+    -fixedLength : on
+    -numFVs : -1
+    -FVDim : -1
+    -sampleSize : -1
+*** -seedkm : 171236
+*** -seedproj : 193132
+    -seedsample : 385089224
+    -verbose : 0
+-------------------------------------------------------------
+  Loading data from frequency vector file '/home/data/wanli/Cmodel_projects/xiangshan-correlation/checkpoints/coremark-linux-20m/profiling/coremark/simpoint_bbv.gz' (size: 118x8918)
+  Created random projection matrix (size: 8918x15)
+  Loaded and projected frequency vector file
+  Applying fixed-length vector weights (uniform weights)
+  Searching for best clustering for k <= 30
+
+--------------------------------------------------------------
+Run number 1 of at most 7, k = 1
+--------------------------------------------------------------
+  --------------------------------------------------------------
+  Initialization seed trial #1 of 2; initialization seed = 171236
+  --------------------------------------------------------------
+  Initialized k-means centers using random sampling: 1 centers
+  Number of k-means iterations performed: 1
+  BIC score: 10602.2
+  Distortion: 0.000622269
+  Distortions/cluster: 0.000622269 
+  Variance: 5.31854e-06
+  Variances/cluster: 5.31854e-06 
+  --------------------------------------------------------------
+  Initialization seed trial #2 of 2; initialization seed = 171237
+  --------------------------------------------------------------
+  Initialized k-means centers using random sampling: 1 centers
+  Number of k-means iterations performed: 1
+  BIC score: 10602.2
+  Distortion: 0.000622269
+  Distortions/cluster: 0.000622269 
+  Variance: 5.31854e-06
+  Variances/cluster: 5.31854e-06 
+  The best initialization seed trial was #1
+
+--------------------------------------------------------------
+Run number 2 of at most 7, k = 30
+--------------------------------------------------------------
+  --------------------------------------------------------------
+  Initialization seed trial #1 of 2; initialization seed = 171238
+  --------------------------------------------------------------
+  Initialized k-means centers using random sampling: 30 centers
+  Number of k-means iterations performed: 3
+  BIC score: 12996.5
+  Distortion: 7.9503e-06
+  Distortions/cluster: 2.27131e-08 3.88102e-07 1.96414e-07 9.46358e-08 0 2.2639e-07 3.52558e-07 1.37502e-08 2.67941e-07 2.1605e-07 8.20392e-08 6.14602e-07 0 1.02941e-07 1.15918e-07 1.72526e-07 3.06513e-07 9.04651e-07 1.10529e-09 2.58936e-08 0 4.26069e-07 5.20949e-07 1.62693e-06 7.70372e-34 0 0 0 1.27161e-06 0 
+  Variance: 9.03443e-08
+  Variances/cluster: 2.27131e-08 7.76205e-08 9.82068e-08 3.15453e-08 0 7.54632e-08 1.17519e-07 6.87511e-09 5.35881e-08 7.20165e-08 1.64078e-08 4.72771e-08 0 3.43136e-08 2.89796e-08 3.45052e-08 7.66282e-08 2.26163e-07 1.10529e-09 2.58936e-08 0 1.42023e-07 7.44213e-08 1.47903e-07 0 0 0 0 2.54323e-07 0 
+  --------------------------------------------------------------
+  Initialization seed trial #2 of 2; initialization seed = 171239
+  --------------------------------------------------------------
+  Initialized k-means centers using random sampling: 30 centers
+  Number of k-means iterations performed: 5
+  BIC score: 12982
+  Distortion: 8.19122e-06
+  Distortions/cluster: 1.67584e-06 1.42037e-07 0 1.14794e-07 5.53662e-08 5.01303e-07 0 9.98761e-09 1.59456e-07 3.57202e-07 3.26885e-07 9.31101e-08 1.47361e-07 2.65067e-07 1.96414e-07 1.40511e-06 0 8.0453e-07 1.05898e-07 0 0 0 5.08899e-08 1.91128e-07 0 0 3.50586e-07 9.2927e-07 3.0899e-07 0 
+  Variance: 9.30821e-08
+  Variances/cluster: 2.0948e-07 2.84074e-08 0 5.73972e-08 5.53662e-08 7.16147e-08 0 9.98761e-09 7.97278e-08 8.93004e-08 5.44808e-08 3.10367e-08 2.94721e-08 1.32533e-07 9.82068e-08 9.3674e-08 0 1.34088e-07 5.29488e-08 0 0 0 1.27225e-08 6.37094e-08 0 0 5.00838e-08 1.32753e-07 7.72476e-08 0 
+  The best initialization seed trial was #1
+
+--------------------------------------------------------------
+Run number 3 of at most 7, k = 15
+--------------------------------------------------------------
+  --------------------------------------------------------------
+  Initialization seed trial #1 of 2; initialization seed = 171240
+  --------------------------------------------------------------
+  Initialized k-means centers using random sampling: 15 centers
+  Number of k-means iterations performed: 6
+  BIC score: 13072.1
+  Distortion: 1.48943e-05
+  Distortions/cluster: 2.53836e-06 6.26551e-07 0 8.15083e-07 8.8218e-07 1.79169e-06 0 6.94795e-07 1.2558e-06 1.46093e-06 7.42439e-07 3.40624e-07 9.50403e-07 2.3279e-06 4.6756e-07 
+  Variance: 1.44605e-07
+  Variances/cluster: 2.3076e-07 7.83189e-08 0 5.82202e-08 9.802e-08 1.49307e-07 0 8.68494e-08 2.51161e-07 1.62326e-07 1.2374e-07 8.51559e-08 1.056e-07 3.87984e-07 1.55853e-07 
+  --------------------------------------------------------------
+  Initialization seed trial #2 of 2; initialization seed = 171241
+  --------------------------------------------------------------
+  Initialized k-means centers using random sampling: 15 centers
+  Number of k-means iterations performed: 3
+  BIC score: 12825.9
+  Distortion: 2.033e-05
+  Distortions/cluster: 1.23924e-06 1.25885e-07 1.20612e-06 1.49732e-06 1.77516e-06 4.26069e-07 3.11738e-07 1.16152e-06 2.61163e-06 3.73985e-06 6.23545e-06 0 0 0 0 
+  Variance: 1.97378e-07
+  Variances/cluster: 1.12658e-07 4.19616e-08 1.20612e-07 1.49732e-07 1.61378e-07 1.42023e-07 1.55869e-07 1.65931e-07 2.37421e-07 2.0777e-07 3.11773e-07 0 0 0 0 
+  The best initialization seed trial was #1
+
+--------------------------------------------------------------
+Run number 4 of at most 7, k = 8
+--------------------------------------------------------------
+  --------------------------------------------------------------
+  Initialization seed trial #1 of 2; initialization seed = 171242
+  --------------------------------------------------------------
+  Initialized k-means centers using random sampling: 8 centers
+  Number of k-means iterations performed: 12
+  BIC score: 12634.4
+  Distortion: 3.61838e-05
+  Distortions/cluster: 9.32996e-06 9.01694e-06 7.8436e-06 1.86305e-06 4.92246e-06 1.54939e-06 1.65841e-06 0 
+  Variance: 3.28944e-07
+  Variances/cluster: 3.88748e-07 3.33961e-07 3.26817e-07 1.69368e-07 4.10205e-07 2.58231e-07 2.76402e-07 0 
+  --------------------------------------------------------------
+  Initialization seed trial #2 of 2; initialization seed = 171243
+  --------------------------------------------------------------
+  Initialized k-means centers using random sampling: 8 centers
+  Number of k-means iterations performed: 9
+  BIC score: 12422.9
+  Distortion: 4.68472e-05
+  Distortions/cluster: 1.28701e-05 1.8054e-05 3.50586e-07 0 1.42037e-07 7.6801e-07 1.45695e-05 9.31101e-08 
+  Variance: 4.25884e-07
+  Variances/cluster: 4.76669e-07 6.22551e-07 5.00838e-08 0 2.84074e-08 1.28002e-07 4.41499e-07 3.10367e-08 
+  The best initialization seed trial was #1
+
+--------------------------------------------------------------
+Run number 5 of at most 7, k = 11
+--------------------------------------------------------------
+  --------------------------------------------------------------
+  Initialization seed trial #1 of 2; initialization seed = 171244
+  --------------------------------------------------------------
+  Initialized k-means centers using random sampling: 11 centers
+  Number of k-means iterations performed: 13
+  BIC score: 12731.8
+  Distortion: 2.74708e-05
+  Distortions/cluster: 8.31868e-06 5.74042e-06 3.50586e-07 0 5.20949e-07 2.77751e-06 1.65841e-06 3.06513e-07 4.2979e-06 3.49985e-06 0 
+  Variance: 2.56737e-07
+  Variances/cluster: 3.61682e-07 3.82694e-07 5.00838e-08 0 7.44213e-08 1.54306e-07 2.76402e-07 7.66282e-08 3.06993e-07 2.4999e-07 0 
+  --------------------------------------------------------------
+  Initialization seed trial #2 of 2; initialization seed = 171245
+  --------------------------------------------------------------
+  Initialized k-means centers using random sampling: 11 centers
+  Number of k-means iterations performed: 7
+  BIC score: 12981.3
+  Distortion: 2.03702e-05
+  Distortions/cluster: 3.73985e-06 1.76739e-06 1.4635e-06 0 3.63134e-06 1.20065e-06 1.88937e-06 3.97557e-06 2.10353e-07 1.79169e-06 7.0051e-07 
+  Variance: 1.90376e-07
+  Variances/cluster: 2.0777e-07 2.20924e-07 3.65875e-07 0 2.59381e-07 1.20065e-07 1.88937e-07 2.09241e-07 3.50588e-08 1.49307e-07 1.16752e-07 
+  The best initialization seed trial was #2
+
+--------------------------------------------------------------
+Run number 6 of at most 7, k = 9
+--------------------------------------------------------------
+  --------------------------------------------------------------
+  Initialization seed trial #1 of 2; initialization seed = 171246
+  --------------------------------------------------------------
+  Initialized k-means centers using random sampling: 9 centers
+  Number of k-means iterations performed: 5
+  BIC score: 12790.6
+  Distortion: 2.83553e-05
+  Distortions/cluster: 8.31868e-06 5.74042e-06 1.4635e-06 0 3.49985e-06 1.9635e-06 2.54872e-06 4.16228e-06 6.58307e-07 
+  Variance: 2.6014e-07
+  Variances/cluster: 3.61682e-07 3.82694e-07 3.65875e-07 0 2.4999e-07 1.51038e-07 2.12393e-07 2.08114e-07 8.22884e-08 
+  --------------------------------------------------------------
+  Initialization seed trial #2 of 2; initialization seed = 171247
+  --------------------------------------------------------------
+  Initialized k-means centers using random sampling: 9 centers
+  Number of k-means iterations performed: 3
+  BIC score: 12471.8
+  Distortion: 4.22202e-05
+  Distortions/cluster: 2.08643e-05 0 0 0 7.61294e-06 7.84622e-07 2.85485e-06 7.76212e-06 2.34138e-06 
+  Variance: 3.87342e-07
+  Variances/cluster: 6.73043e-07 0 0 0 3.17206e-07 8.71802e-08 2.37904e-07 3.52824e-07 1.80106e-07 
+  The best initialization seed trial was #1
+
+--------------------------------------------------------------
+Run number 7 of at most 7, k = 10
+--------------------------------------------------------------
+  --------------------------------------------------------------
+  Initialization seed trial #1 of 2; initialization seed = 171248
+  --------------------------------------------------------------
+  Initialized k-means centers using random sampling: 10 centers
+  Number of k-means iterations performed: 4
+  BIC score: 12478.1
+  Distortion: 3.96562e-05
+  Distortions/cluster: 8.24145e-06 0 0 0 7.61294e-06 7.84622e-07 2.1543e-06 4.6756e-07 2.34138e-06 1.8054e-05 
+  Variance: 3.67187e-07
+  Variances/cluster: 3.9245e-07 0 0 0 3.17206e-07 8.71802e-08 1.95846e-07 1.55853e-07 1.80106e-07 6.22551e-07 
+  --------------------------------------------------------------
+  Initialization seed trial #2 of 2; initialization seed = 171249
+  --------------------------------------------------------------
+  Initialized k-means centers using random sampling: 10 centers
+  Number of k-means iterations performed: 6
+  BIC score: 12719.7
+  Distortion: 2.93639e-05
+  Distortions/cluster: 3.52558e-07 6.89544e-06 2.30923e-06 1.65841e-06 1.21637e-06 1.96414e-07 2.1543e-06 0 1.28138e-05 1.76739e-06 
+  Variance: 2.71888e-07
+  Variances/cluster: 1.17519e-07 3.13429e-07 1.35837e-07 2.76402e-07 8.68836e-08 9.82068e-08 1.95846e-07 0 5.12552e-07 2.20924e-07 
+  The best initialization seed trial was #2
+
+------------------------------------------------------------------
+------------------------------------------------------------------
+Post-processing runs
+------------------------------------------------------------------
+------------------------------------------------------------------
+  For the BIC threshold, the best clustering was run 5 (k = 11)
+  Post-processing run 5 (k = 11)
+    Saving simpoints of all non-empty clusters to file '/home/data/wanli/Cmodel_projects/xiangshan-correlation/checkpoints/coremark-linux-20m/cluster/coremark/simpoints0'
+    Saving weights of all non-empty clusters to file '/home/data/wanli/Cmodel_projects/xiangshan-correlation/checkpoints/coremark-linux-20m/cluster/coremark/weights0'

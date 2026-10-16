@@ -1,0 +1,11 @@
+#!/bin/sh
+# 本仓库把所有组件当普通文件保存，不用子模块。
+# 如果某个目录里留着 .git（例如构建脚本自动 clone 下来的依赖），git add 只会记下一个提交号，
+# 不会记录文件内容。这里发现这种嵌套仓库就拒绝提交。
+links=$(git diff --cached --raw --no-renames --diff-filter=AM | awk '$2 == "160000" { sub(/^[^\t]*\t/, ""); print }')
+if [ -n "$links" ]; then
+    echo "错误：以下路径是嵌套的 git 仓库，不能直接提交：" >&2
+    echo "$links" | sed 's/^/  /' >&2
+    echo "请先 git rm --cached <路径>，删掉该目录下的 .git，再重新 git add。" >&2
+    exit 1
+fi
