@@ -1,0 +1,43 @@
+title: "KMH-V2 RTL BPU：三级预测流水与 override（BPU.scala / NewFtq.scala）"
+stages:
+  - {id: S0, sub: "npcGen 选下一块 PC"}
+  - {id: S1, sub: "uFTB · 当拍写 FTQ"}
+  - {id: S2, sub: "TAGE-SC + FTB · 与 S1 结果比"}
+  - {id: S3, sub: "ITTAGE + RAS 纠错 · 与 S2 结果比"}
+nodes:
+  - {id: npc, type: mux, label: "npcGen", stage: S0, ports: 4, hl: true}
+  - {id: s0pc, type: reg, label: "s0_pc", between: [S0, S1]}
+  - {id: uftb, type: table, label: "uFTB (FauFTB)", fields: ["V", "tag", "2 br slot", "fallThru"], stage: S1}
+  - {id: s1res, type: reg, label: "s1 pred", between: [S1, S2]}
+  - {id: prev1, type: reg, label: "previous_s1_pred", stage: S2, row: 1}
+  - {id: tage, type: table, label: "TAGE-SC + FTB", fields: ["tag", "ctr", "FTB entry"], stage: S2, stack: 4}
+  - {id: cmp2, type: cmp, label: "target / brNum / taken / cfiIdx", stage: S2, hl: true}
+  - {id: s2res, type: reg, label: "s2 pred", between: [S2, S3]}
+  - {id: prev2, type: reg, label: "previous_s2_pred", stage: S3, row: 1}
+  - {id: ittage, type: table, label: "ITTAGE + RAS", fields: ["tag", "target"], stage: S3, stack: 5}
+  - {id: cmp3, type: cmp, label: "brTaken / target / fallThruErr / multiHit", stage: S3, hl: true}
+  - {id: ftq, type: fifo, label: "FTQ 64 项\nbpuPtr / ifuPtr", stage: S3, row: 2, bold: true}
+  - {id: ifu, type: block, label: "IFU f0/f1", stage: S3, row: 2, col: 1}
+edges:
+  - "npc -> s0pc : s0_pc"
+  - "s0pc -> uftb"
+  - "uftb -> s1res"
+  - "uftb => ftq : resp.valid@s1（先写） | hl"
+  - "s1res -> prev1"
+  - "s1res -> tage"
+  - "tage -> cmp2"
+  - "prev1 -> cmp2"
+  - "tage -> s2res"
+  - "cmp2 ~> npc.sel : s2_redirect（滑 1 拍） | fb hl"
+  - "cmp2 ~> ftq : bpuPtr := idx+1, 拉回 ifuPtr | fb"
+  - "s2res -> prev2"
+  - "s2res -> ittage"
+  - "ittage -> cmp3"
+  - "prev2 -> cmp3"
+  - "cmp3 ~> npc.sel : s3_redirect（滑 2 拍） | fb hl via=top"
+  - "cmp3 ~> ftq : bpuPtr := idx+1 | fb"
+  - "ftq -> ifu : req"
+  - "cmp2 ~> ifu : flushFromBpu.s2/s3（已发的取指作废） | fb"
+  - "uftb -> npc : s1_target (prio 4) | fb"
+legend: {reg: 级间寄存器, fb: 重定向/反馈, ctrl: 控制, hl: 关键比较}
+callouts: {}

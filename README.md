@@ -9,6 +9,7 @@ xiangshan-correlation/
 ├── README.md
 ├── AGENTS.md             # 代理工具读取的约定，如检查点命名规则
 ├── Docs/                 # 说明文档：difftest.md 讲 difftest，checkpoint.md 讲检查点的生成与恢复，upstream-versions.txt 记录各组件的上游提交
+│   └── learning/         # 学习文档：README.md 是学习计划，01-pipeline-overview.md 讲流水线（RTL 对 gem5），figs/ 放官方图与自绘图
 ├── scripts/              # 所有自写脚本，见下文“脚本”
 │   └── hooks/            # 仓库的 git hook，拒绝提交嵌套的 git 仓库
 ├── GEM5-XS/              # XS-GEM5，KMH-V2 标签

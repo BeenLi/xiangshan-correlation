@@ -1,0 +1,27 @@
+title: "XS-GEM5 DecoupledBPUWithFTB：同拍算完、事后补空泡（decoupled_bpred.cc）"
+nodes:
+  - {id: s0pc, type: reg, label: "s0PC + s0History"}
+  - {id: put, type: block, label: "putPCHistory()\n同一 tick 查全部三级", hl: true}
+  - {id: p0, type: table, label: "predsOfEachStage[0]\nuFTB / uRAS", fields: ["valid", "ftbEntry", "target"], row: 0, col: 2}
+  - {id: p1, type: table, label: "predsOfEachStage[1]\nTAGE / FTB / RAS", fields: ["valid", "ftbEntry", "target"], row: 1, col: 2}
+  - {id: p2, type: table, label: "predsOfEachStage[2]\nITTAGE", fields: ["valid", "ftbEntry", "target"], row: 2, col: 2}
+  - {id: gen, type: block, label: "generateFinalPredAndCreateBubbles()\n从后往前取第一个 valid 为最终\n从前往后数第一个 match() 的级号", hl: true, col: 3}
+  - {id: bub, type: reg, label: "numOverrideBubbles", col: 4, row: 1}
+  - {id: enq, type: block, label: "tryEnqFetchStream()\n空泡归零才入队", col: 5}
+  - {id: ftq, type: fifo, label: "FTQ 128 项\n只见最终结果", col: 6, bold: true}
+  - {id: fetch, type: block, label: "fetch stage", col: 7}
+edges:
+  - "s0pc -> put"
+  - "put -> p0"
+  - "put -> p1"
+  - "put -> p2"
+  - "p0 -> gen"
+  - "p1 -> gen"
+  - "p2 -> gen"
+  - "gen -> bub : first_hit_stage (0/1/2)"
+  - "gen -> enq : finalPred"
+  - "bub ~> enq : >0 则等待 | hl"
+  - "enq -> ftq"
+  - "ftq -> fetch"
+  - "enq ~> s0pc : receivedPred=false, 下一块 | fb"
+legend: {fb: 下一拍, ctrl: 控制, hl: 关键步骤}

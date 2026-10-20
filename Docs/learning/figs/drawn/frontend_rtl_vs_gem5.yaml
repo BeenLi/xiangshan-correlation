@@ -1,0 +1,34 @@
+title: "前端级划分对照：KMH-V2 RTL（上）与 XS-GEM5（下）"
+stages:
+  - {id: P, sub: "预测"}
+  - {id: Q, sub: "取指目标队列"}
+  - {id: F, sub: "取指"}
+  - {id: B, sub: "指令缓冲"}
+  - {id: D, sub: "译码"}
+lanes:
+  - {id: rtl, name: "RTL"}
+  - {id: g5, name: "gem5"}
+nodes:
+  - {id: r_bpu, type: block, label: "BPU s0→s1→s2→s3\n真流水, 先写后改", stage: P, lane: rtl, hl: true}
+  - {id: r_ftq, type: fifo, label: "FTQ 64", stage: Q, lane: rtl}
+  - {id: r_ifu, type: block, label: "IFU f0→f1→f2→f3\n(ICache 2 行, 预译码, MMIO)", stage: F, lane: rtl}
+  - {id: r_ib, type: fifo, label: "IBuffer 48\n6 bank", stage: B, lane: rtl}
+  - {id: r_dec, type: block, label: "Decode ×6\n+Fusion", stage: D, lane: rtl}
+  - {id: g_bpu, type: block, label: "DecoupledBPUWithFTB\n同拍算完 + numOverrideBubbles", stage: P, lane: g5, hl: true}
+  - {id: g_ftq, type: fifo, label: "FTQ 128", stage: Q, lane: g5, bold: true}
+  - {id: g_fetch, type: block, label: "fetch\nfetchToDecodeDelay = 2", stage: F, lane: g5}
+  - {id: g_fq, type: fifo, label: "fetchQueue 48\nfetchBuffer 66 B", stage: B, lane: g5}
+  - {id: g_dec, type: block, label: "decode ×6\n+fusion", stage: D, lane: g5}
+edges:
+  - "r_bpu -> r_ftq : 预测块"
+  - "r_ftq -> r_ifu : req"
+  - "r_ifu -> r_ib : 32 B/拍"
+  - "r_ib -> r_dec"
+  - "r_ifu ~> r_ftq : 预译码 wb_redirect | fb"
+  - "r_bpu ~> r_ifu : flushFromBpu s2/s3 | fb hl"
+  - "g_bpu -> g_ftq : finalPred"
+  - "g_ftq -> g_fetch : decoupledPredict"
+  - "g_fetch -> g_fq"
+  - "g_fq -> g_dec"
+  - "g_dec ~> g_bpu : decode squash | fb"
+legend: {fb: 反馈/冲刷, hl: 建模方式差异, data: 数据}
