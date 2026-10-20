@@ -19,6 +19,15 @@ cmodel-interview/
 4. 写完对照 `solutions/NN_*.cpp` 和 `solutions/README.md` 里的讲解，重点看"周期对不对齐""握手顺序"。
 5. 最后过一遍"追问"，口头回答，这部分在面试里通常比代码本身更拉开差距。
 
+自测自己的代码：在 `mine/` 下按参考答案的文件名写（如 `mine/01_arbiter.cpp`），自带 `main()` 和 `assert`：
+
+```bash
+make mine N=01    # 只编译运行 mine/01*.cpp
+make mine         # 编译运行 mine/ 下全部 .cpp
+```
+
+`mine/` 用 `-O0 -g` 加 ASan/UBSan 编译，越界和未定义行为会直接报出来，也可以 `gdb build/mine/01_arbiter`。
+
 运行全部参考答案：
 
 ```bash
@@ -28,7 +37,7 @@ make clean
 
 | # | 题目 | 考点 | 建议用时 | 难度 |
 |---|------|------|---------|------|
-| 01 | [仲裁器](problems/01-arbiter.md) | 固定优先级、轮询、包锁定、位运算技巧 | 20 min | ★ |
+| 01 | [仲裁器](problems/01-arbiter.md) | 固定优先级、轮询、包锁定、DWRR、位运算技巧 | 30 min | ★★ |
 | 02 | [环形 FIFO 与延迟队列](problems/02-fifo-delay-queue.md) | 指针回绕、满空判断、定延迟建模 | 20 min | ★ |
 | 03 | [Credit 流控](problems/03-credit-flow-control.md) | credit 往返、缓冲深度与吞吐、反压 | 30 min | ★★ |
 | 04 | [五级流水线](problems/04-pipeline-stall-flush.md) | valid/ready、stall、flush、反压、两阶段更新 | 45 min | ★★★ |

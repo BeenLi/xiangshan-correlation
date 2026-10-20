@@ -1,8 +1,9 @@
-// 01 仲裁器：固定优先级 / 轮询 / 带包锁定的轮询
+// 01 仲裁器：固定优先级 / 轮询 / 带包锁定的轮询 / DWRR
 // 编译：g++ -std=c++17 -O2 -Wall -Wextra 01_arbiter.cpp && ./a.out
 #include <cassert>
 #include <cstdint>
 #include <cstdio>
+#include <vector>
 
 // 取最低位的 1 的下标；x 为 0 时返回 -1
 static int lowestSetBit(uint64_t x) {
@@ -74,6 +75,57 @@ private:
     int owner_ = -1;
 };
 
+// ---------------- D. DWRR（Deficit Weighted Round Robin）：按包长计费的加权轮询 ----------------
+// 每个请求者一个 deficit 计数器。指针轮到 i 时（一次"访问"开始）deficit[i] += quantum[i]；
+// 只要队头包长 <= deficit[i] 就一直授权 i 并扣掉包长；不够了才把指针移到下一个，
+// 余下的 deficit 留到下一轮。没请求的请求者被指针扫过时 deficit 清零，空闲不能攒额度。
+// 长期看每个请求者拿到的"字节数"正比于 quantum，和包长无关，这是它比按包计数的 WRR 好的地方。
+class DWRRArbiter {
+public:
+    explicit DWRRArbiter(std::vector<int> quantum)
+        : n_(static_cast<int>(quantum.size())), quantum_(std::move(quantum)), deficit_(n_, 0) {
+        assert(n_ > 0 && n_ < 64);
+        for (int q : quantum_) assert(q > 0);
+    }
+
+    // len[i] 是请求者 i 队头包的长度，只在 req 第 i 位为 1 时有效。每次调用选出一个包。
+    int arbitrate(uint64_t req, const std::vector<int>& len) {
+        if ((req & ((1ULL << n_) - 1)) == 0) return -1;  // 没人请求：状态不变
+        // 有请求时一定能授权：在请求的人每被访问一次 deficit 就涨 quantum，迟早够发队头包
+        while (true) {
+            int i = ptr_;
+            if (!((req >> i) & 1)) {
+                deficit_[i] = 0;  // 空闲：额度作废
+                nextVisit();
+                continue;
+            }
+            if (!visiting_) {
+                deficit_[i] += quantum_[i];  // 每次访问只加一次 quantum
+                visiting_ = true;
+            }
+            if (len[i] <= deficit_[i]) {
+                deficit_[i] -= len[i];  // 指针不动，下次调用继续服务 i
+                return i;
+            }
+            nextVisit();  // 额度不够发队头包：结束这次访问，余额留着
+        }
+    }
+
+    int deficit(int i) const { return deficit_[i]; }
+
+private:
+    void nextVisit() {
+        visiting_ = false;
+        ptr_ = (ptr_ + 1) % n_;
+    }
+
+    int n_;
+    std::vector<int> quantum_;
+    std::vector<int> deficit_;
+    int ptr_ = 0;
+    bool visiting_ = false;  // ptr_ 本次访问是否已经加过 quantum
+};
+
 int main() {
     // A
     FixedPriorityArbiter fp(4);
@@ -113,6 +165,51 @@ int main() {
         printf("LCK cycle %d grant=%d\n", t, g);
         assert(g == seq[t].expect);
     }
+
+    // D：quantum = {4, 2, 2}，队头包长固定为 {3, 3, 1}
+    DWRRArbiter dw({4, 2, 2});
+    const std::vector<int> len = {3, 3, 1};
+    struct { uint64_t req; int expect, d0, d1, d2; } dseq[] = {
+        {0b111, 0, 1, 0, 0},   // 访问 0：0+4=4，发 3 余 1
+        {0b111, 2, 1, 2, 1},   // 0 余 1 不够；访问 1：0+2=2 < 3 跳过（余额留着）；访问 2：发 1 余 1
+        {0b111, 2, 1, 2, 0},   // 2 再发一个，余 0
+        {0b111, 0, 2, 2, 0},   // 访问 0：1+4=5，发 3 余 2
+        {0b101, 2, 2, 0, 1},   // 0 余 2 不够；1 没请求 → deficit 清零；访问 2
+        {0b101, 2, 2, 0, 0},
+        {0b101, 0, 3, 0, 0},   // 访问 0：2+4=6，发 3 余 3
+        {0b111, 0, 0, 0, 0},   // 余 3 够再发一个
+        {0b111, 2, 0, 2, 1},   // 1 刚清过零，0+2=2 < 3 又被跳过
+        {0b111, 2, 0, 2, 0},
+        {0b000, -1, 0, 2, 0},  // 没人请求：状态不变
+        {0b111, 0, 1, 2, 0},
+    };
+    for (int t = 0; t < 12; ++t) {
+        int g = dw.arbitrate(dseq[t].req, len);
+        printf("DWRR cycle %d grant=%d deficit={%d,%d,%d}\n", t, g, dw.deficit(0), dw.deficit(1), dw.deficit(2));
+        assert(g == dseq[t].expect);
+        assert(dw.deficit(0) == dseq[t].d0 && dw.deficit(1) == dseq[t].d1 && dw.deficit(2) == dseq[t].d2);
+    }
+
+    // 带宽按 quantum 分配：包长都为 1 时，600 次授权里正好 100 / 200 / 300
+    DWRRArbiter dw2({1, 2, 3});
+    int dcnt[3] = {};
+    for (int t = 0; t < 600; ++t) {
+        int g = dw2.arbitrate(0b111, {1, 1, 1});
+        assert(g >= 0);
+        dcnt[g]++;
+    }
+    assert(dcnt[0] == 100 && dcnt[1] == 200 && dcnt[2] == 300);
+
+    // 包长不同时按字节公平：quantum {4,2,2}、包长 {3,3,1}，10000 次授权后字节数约 2:1:1
+    DWRRArbiter dw3({4, 2, 2});
+    long bytes[3] = {};
+    for (int t = 0; t < 10000; ++t) {
+        int g = dw3.arbitrate(0b111, len);
+        assert(g >= 0);
+        bytes[g] += len[g];
+    }
+    assert(bytes[0] == 10002 && bytes[1] == 4998 && bytes[2] == 5000);
+
     printf("01_arbiter: all tests passed\n");
     return 0;
 }
