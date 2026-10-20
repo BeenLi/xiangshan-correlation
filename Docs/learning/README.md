@@ -3,7 +3,7 @@
 
 # xiangshan-correlation 学习计划：用六大思想读一个 Cmodel 与 RTL 的差距
 
-> 这是 CPU → GPU → NPU 三平台学习的第一站。学习对象不是"香山"这个抽象名词，而是 fdu-152 上的 `xiangshan-correlation` 工作区：一份昆明湖 V2 RTL 和一份号称按它校准过的 XS-GEM5，在同一条指令流上跑出 1.35% 的 IPC 差距。**差距本身就是教材**：每一个对不上的计数器，都是两个模型对同一个体系结构思想的两种实现在打架。
+> 这是 CPU → GPU → NPU 三平台学习的第一站。学习对象不是"香山"这个抽象名词，而是本仓库这个 `xiangshan-correlation` 工作区：一份昆明湖 V2 RTL 和一份号称按它校准过的 XS-GEM5，在同一条指令流上跑出 1.35% 的 IPC 差距。**差距本身就是教材**：每一个对不上的计数器，都是两个模型对同一个体系结构思想的两种实现在打架。
 >
 > 坐标系来自 [six-ideas-in-CA](https://tnm.engin.umich.edu/)；教科书锚点在 Computer Architecture A Quantitative Approach；LSU 的概念底座沿用 LSU 核心概念 - 访存的一生与六大机制、gem5 load 流水线建模 - TimeBuffer 与时序保真、TLB 私有与页表共享 - sfence 与 IPI shootdown。
 >
@@ -13,7 +13,7 @@
 
 ## 0. 工作区现状快照（2026-10-20 勘察，只读）
 
-路径：`fdu-152:/home/data/wanli/Cmodel_projects/xiangshan-correlation`，16 GB，git 单仓库拍平了所有组件，基线标签 `kmhv2-baseline`。
+仓库 16 GB，git 单仓库拍平了所有组件，基线标签 `kmhv2-baseline`。
 
 | 组件 | 版本 | 已构建？ | 备注 |
 | --- | --- | --- | --- |
