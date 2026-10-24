@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="860" height="320" viewBox="0 0 860 320" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif">
+  <!-- 手写 SVG：KMH-V2 FTQ 四个指针在环形队列里的位置（NewFtq.scala） -->
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#333"/>
+    </marker>
+  </defs>
+  <rect width="860" height="320" fill="#ffffff"/>
+
+  <text x="70" y="30" font-size="16" font-weight="bold" fill="#222">KMH-V2 FTQ：四个指针在环形队列里的位置</text>
+  <text x="70" y="50" font-size="12" fill="#666">FtqSize = 64，这里画 16 格示意；指针带回绕位，从左到右是由老到新、推进方向</text>
+
+  <!-- 区域底色 -->
+  <rect x="70"  y="140" width="88"  height="56" fill="#ffffff"/>
+  <rect x="158" y="140" width="176" height="56" fill="#dbe4f0"/>
+  <rect x="334" y="140" width="132" height="56" fill="#d5ecd4"/>
+  <rect x="466" y="140" width="176" height="56" fill="#fde4c4"/>
+  <rect x="642" y="140" width="132" height="56" fill="#ffffff"/>
+
+  <!-- 16 个格子：格线只画上下短刻度，免得压住文字 -->
+  <path d="M114,140 v10 M114,186 v10 M158,140 v10 M158,186 v10 M202,140 v10 M202,186 v10 M246,140 v10 M246,186 v10 M290,140 v10 M290,186 v10 M334,140 v10 M334,186 v10 M378,140 v10 M378,186 v10 M422,140 v10 M422,186 v10 M466,140 v10 M466,186 v10 M510,140 v10 M510,186 v10 M554,140 v10 M554,186 v10 M598,140 v10 M598,186 v10 M642,140 v10 M642,186 v10 M686,140 v10 M686,186 v10 M730,140 v10 M730,186 v10" stroke="#888" stroke-width="1" fill="none"/>
+  <rect x="70" y="140" width="704" height="56" fill="none" stroke="#555" stroke-width="1.5"/>
+
+  <!-- 区域文字 -->
+  <g font-size="13" text-anchor="middle" fill="#222">
+    <text x="114" y="173" fill="#888">空闲</text>
+    <text x="246" y="166">已发给 IFU</text>
+    <text x="246" y="184">等后端提交</text>
+    <text x="400" y="166">已预取</text>
+    <text x="400" y="184">待取指</text>
+    <text x="554" y="166">已预测</text>
+    <text x="554" y="184">待预取、待取指</text>
+    <text x="708" y="173" fill="#888">空闲</text>
+  </g>
+
+  <!-- 指针 -->
+  <g font-size="14" font-weight="bold" text-anchor="middle" fill="#222">
+    <text x="180" y="88">commPtr</text>
+    <text x="356" y="88">ifuPtr</text>
+    <text x="488" y="88">pfPtr</text>
+    <text x="664" y="88">bpuPtr</text>
+  </g>
+  <g font-size="12" text-anchor="middle" fill="#555">
+    <text x="180" y="106">提交回收</text>
+    <text x="356" y="106">下一个发给 IFU</text>
+    <text x="488" y="106">下一个发去预取</text>
+    <text x="664" y="106">下一个写入位置</text>
+  </g>
+  <g stroke="#333" stroke-width="1.5" marker-end="url(#ah)">
+    <line x1="180" y1="112" x2="180" y2="138"/>
+    <line x1="356" y1="112" x2="356" y2="138"/>
+    <line x1="488" y1="112" x2="488" y2="138"/>
+    <line x1="664" y1="112" x2="664" y2="138"/>
+  </g>
+
+  <!-- 距离标注 -->
+  <g stroke="#333" stroke-width="1" marker-start="url(#ah)" marker-end="url(#ah)">
+    <line x1="358" y1="222" x2="486" y2="222"/>
+    <line x1="358" y1="252" x2="662" y2="252"/>
+    <line x1="182" y1="282" x2="662" y2="282"/>
+  </g>
+  <g stroke="#bbb" stroke-width="1" stroke-dasharray="3,3">
+    <line x1="180" y1="196" x2="180" y2="290"/>
+    <line x1="356" y1="196" x2="356" y2="260"/>
+    <line x1="488" y1="196" x2="488" y2="230"/>
+    <line x1="664" y1="196" x2="664" y2="290"/>
+  </g>
+  <g font-size="12" fill="#222">
+    <text x="496" y="226">预取提前量（FDIP 跑在取指前面多远）</text>
+    <text x="672" y="256">取指落后预测多少</text>
+    <text x="672" y="286">validEntries，到 64 反压 BPU</text>
+  </g>
+</svg>

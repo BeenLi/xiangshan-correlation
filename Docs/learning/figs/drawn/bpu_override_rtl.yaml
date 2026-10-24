@@ -1,39 +1,49 @@
-title: "KMH-V2 RTL BPU：三级预测流水与 override（BPU.scala / NewFtq.scala）"
+title: "KMH-V2 RTL BPU：三级预测流水与 override（BPU.scala / FTB.scala / Tage.scala / ITTAGE.scala / NewFtq.scala）"
+# 查表地址：FTB、TAGE 在 s0 用 s0_pc 发 SRAM 读（FTB.scala:674、Tage.scala:646），SRAM 自身相当于 S0|S1 寄存器，
+# s1 比 tag、选路，s2 拼目标；ITTAGE 在 s1 用 s1_pc 发读，受 uFTB 的 s1_isIndirect 门控（ITTAGE.scala:436、541），s3 出目标。
 stages:
-  - {id: S0, sub: "npcGen 选下一块 PC"}
-  - {id: S1, sub: "uFTB · 当拍写 FTQ"}
-  - {id: S2, sub: "TAGE-SC + FTB · 与 S1 结果比"}
-  - {id: S3, sub: "ITTAGE + RAS 纠错 · 与 S2 结果比"}
+  - {id: S0, sub: "npcGen 选下一块 PC · s0_pc 发 SRAM 读"}
+  - {id: S1, sub: "uFTB 出结果并写 FTQ · FTB/TAGE 比 tag"}
+  - {id: S2, sub: "FTB 拼目标 + TAGE 方向 · 与 S1 结果比"}
+  - {id: S3, sub: "SC · ITTAGE · RAS 修正 · 与 S2 结果比"}
 nodes:
   - {id: npc, type: mux, label: "npcGen", stage: S0, ports: 4, hl: true}
-  - {id: s0pc, type: reg, label: "s0_pc", between: [S0, S1]}
+  - {id: s0pc, type: reg, label: "s1_pc", between: [S0, S1]}
   - {id: uftb, type: table, label: "uFTB (FauFTB)", fields: ["V", "tag", "2 br slot", "fallThru"], stage: S1}
+  - {id: tage, type: table, label: "TAGE-SC + FTB（SRAM）", fields: ["tag", "ctr", "FTB entry"], stage: S1, row: 1, stack: 4}
+  - {id: ittage, type: table, label: "ITTAGE（SRAM）", fields: ["tag", "target"], stage: S1, row: 2, col: 1, stack: 5}
   - {id: s1res, type: reg, label: "s1 pred", between: [S1, S2]}
-  - {id: prev1, type: reg, label: "previous_s1_pred", stage: S2, row: 1}
-  - {id: tage, type: table, label: "TAGE-SC + FTB", fields: ["tag", "ctr", "FTB entry"], stage: S2, stack: 4}
+  - {id: s2ent, type: reg, label: "FTB entry / 方向", between: [S1, S2], row: 1}
+  - {id: tcalc2, type: block, label: "fromFtbEntry\n拼目标", stage: S2, row: 1}
   - {id: cmp2, type: cmp, label: "target / brNum / taken / cfiIdx", stage: S2, hl: true}
+  - {id: ittsel, type: block, label: "ITTAGE\n选 provider", stage: S2, row: 2}
   - {id: s2res, type: reg, label: "s2 pred", between: [S2, S3]}
-  - {id: prev2, type: reg, label: "previous_s2_pred", stage: S3, row: 1}
-  - {id: ittage, type: table, label: "ITTAGE + RAS", fields: ["tag", "target"], stage: S3, stack: 5}
+  - {id: s2itt, type: reg, label: "ITTAGE 目标", between: [S2, S3], row: 2}
+  - {id: s3fix, type: block, label: "SC 修方向 · ITTAGE 目标\nRAS 修 ret", stage: S3, row: 1}
   - {id: cmp3, type: cmp, label: "brTaken / target / fallThruErr / multiHit", stage: S3, hl: true}
-  - {id: ftq, type: fifo, label: "FTQ 64 项\nbpuPtr / ifuPtr", stage: S3, row: 2, bold: true}
-  - {id: ifu, type: block, label: "IFU f0/f1", stage: S3, row: 2, col: 1}
+  - {id: ftq, type: fifo, label: "FTQ 64 项\nbpuPtr / ifuPtr", stage: S3, row: 3, bold: true}
+  - {id: ifu, type: block, label: "IFU f0/f1", stage: S3, row: 3, col: 1}
 edges:
   - "npc -> s0pc : s0_pc"
+  - "npc -> tage : s0_pc 作 SRAM 读地址 | hl"
   - "s0pc -> uftb"
+  - "s0pc -> ittage : s1_pc 发读"
+  - "uftb ~> ittage.top : s1_isIndirect 门控"
   - "uftb -> s1res"
   - "uftb => ftq : resp.valid@s1（先写） | hl"
-  - "s1res -> prev1"
-  - "s1res -> tage"
-  - "tage -> cmp2"
-  - "prev1 -> cmp2"
-  - "tage -> s2res"
+  - "tage -> s2ent : 比 tag、选路"
+  - "s2ent -> tcalc2"
+  - "tcalc2 -> cmp2"
+  - "s1res -> cmp2 : previous_s1_pred"
+  - "tcalc2 -> s2res"
+  - "ittage -> ittsel"
+  - "ittsel -> s2itt"
+  - "s2itt -> s3fix"
+  - "s2res -> s3fix"
+  - "s3fix -> cmp3"
+  - "s2res -> cmp3 : previous_s2_pred"
   - "cmp2 ~> npc.sel : s2_redirect（滑 1 拍） | fb hl"
   - "cmp2 ~> ftq : bpuPtr := idx+1, 拉回 ifuPtr | fb"
-  - "s2res -> prev2"
-  - "s2res -> ittage"
-  - "ittage -> cmp3"
-  - "prev2 -> cmp3"
   - "cmp3 ~> npc.sel : s3_redirect（滑 2 拍） | fb hl via=top"
   - "cmp3 ~> ftq : bpuPtr := idx+1 | fb"
   - "ftq -> ifu : req"

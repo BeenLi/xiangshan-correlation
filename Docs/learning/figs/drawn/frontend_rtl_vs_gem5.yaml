@@ -4,31 +4,36 @@ stages:
   - {id: Q, sub: "取指目标队列"}
   - {id: F, sub: "取指"}
   - {id: B, sub: "指令缓冲"}
-  - {id: D, sub: "译码"}
+  - {id: D, sub: "译码（属后端）"}
 lanes:
   - {id: rtl, name: "RTL"}
   - {id: g5, name: "gem5"}
 nodes:
   - {id: r_bpu, type: block, label: "BPU s0→s1→s2→s3\n真流水, 先写后改", stage: P, lane: rtl, hl: true}
-  - {id: r_ftq, type: fifo, label: "FTQ 64", stage: Q, lane: rtl}
+  - {id: r_ftq, type: fifo, label: "FTQ 64\n预测→提交", stage: Q, lane: rtl}
   - {id: r_ifu, type: block, label: "IFU f0→f1→f2→f3\n(ICache 2 行, 预译码, MMIO)", stage: F, lane: rtl}
   - {id: r_ib, type: fifo, label: "IBuffer 48\n6 bank", stage: B, lane: rtl}
   - {id: r_dec, type: block, label: "Decode ×6\n+Fusion", stage: D, lane: rtl}
+  - {id: r_ic, type: block, label: "ITLB 48 项 + ICache 64 KB 4 路\nIPrefetch", stage: F, lane: rtl, row: 1}
   - {id: g_bpu, type: block, label: "DecoupledBPUWithFTB\n同拍算完 + numOverrideBubbles", stage: P, lane: g5, hl: true}
-  - {id: g_ftq, type: fifo, label: "FTQ 128", stage: Q, lane: g5, bold: true}
+  - {id: g_ftq, type: fifo, label: "FSQ 64\n+ FTQ 128", stage: Q, lane: g5}
   - {id: g_fetch, type: block, label: "fetch\nfetchToDecodeDelay = 2", stage: F, lane: g5}
   - {id: g_fq, type: fifo, label: "fetchQueue 48\nfetchBuffer 66 B", stage: B, lane: g5}
   - {id: g_dec, type: block, label: "decode ×6\n+fusion", stage: D, lane: g5}
+  - {id: g_ic, type: block, label: "ITLB 48 项 + L1I 64 kB 4 路\n(classic cache)", stage: F, lane: g5, row: 1}
 edges:
   - "r_bpu -> r_ftq : 预测块"
   - "r_ftq -> r_ifu : req"
   - "r_ifu -> r_ib : 32 B/拍"
   - "r_ib -> r_dec"
+  - "r_ifu -> r_ic : 取指 | both"
+  - "r_ftq ~> r_ic : pfPtr 预取"
   - "r_ifu ~> r_ftq : 预译码 wb_redirect | fb"
   - "r_bpu ~> r_ifu : flushFromBpu s2/s3 | fb hl"
   - "g_bpu -> g_ftq : finalPred"
   - "g_ftq -> g_fetch : decoupledPredict"
   - "g_fetch -> g_fq"
   - "g_fq -> g_dec"
+  - "g_fetch -> g_ic : 取指 | both"
   - "g_dec ~> g_bpu : decode squash | fb"
 legend: {fb: 反馈/冲刷, hl: 建模方式差异, data: 数据}

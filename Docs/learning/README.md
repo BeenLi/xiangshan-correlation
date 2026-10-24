@@ -70,10 +70,11 @@ Top-down 分解（派发宽度 6）：RTL 前端多出约 108 万 slot，被 GEM
 
 目标：画出昆明湖 V2 从 BPU 到 commit 的每一级，标出每级在 RTL 里是哪个模块、哪根 fire 信号，在 gem5 里是哪个 stage、哪个 delay 参数；课本没有的部分（解耦前端、FTQ、FTB、三级 BPU 覆盖、IBuffer 分 bank、RegCache、ROB 压缩、issue 的 og0/og1 两拍）单独标注。
 
-- [x] 总览笔记：[01 香山流水线微架构总览 - RTL 与 gem5 对照](01-pipeline-overview.md)（首版，含待核实清单）
-- [x] 前端精读 1（2026-10-20，结论在 [01 香山流水线微架构总览 - RTL 与 gem5 对照](01-pipeline-overview.md) §1.3.1）：BPU 三级的 override 机制。RTL 看 [`BPU.scala`](../../XiangShan/src/main/scala/xiangshan/frontend/BPU.scala#L704) 的 `s2_redirect`、`s3_redirect` 与 [`overrideBubble`](../../XiangShan/src/main/scala/xiangshan/frontend/BPU.scala#L1088)；gem5 看 [`pred/ftb/decoupled_bpred.cc`](../../GEM5-XS/src/cpu/pred/ftb/decoupled_bpred.cc#L798) 的空泡处理。问题：两边各自在哪一拍发现"后级推翻前级"，补几个空泡。
-- [ ] 前端精读 2：FTQ 的三个指针（bpuPtr、ifuPtr、commPtr）各自推进条件；gem5 [`fetch_target_queue.cc`](../../GEM5-XS/src/cpu/pred/ftb/fetch_target_queue.cc#L15) 对照。问题：取指落后预测多少、谁反压谁。
+- [x] 总览笔记：[01 香山流水线微架构总览 - RTL 与 gem5 对照](01-pipeline-overview.md)。只放地图：昆明湖整体架构图、前端和后端的级划分对照图、待核实清单，细节分篇的链接也在总览里。
+- [x] 前端精读 1（2026-10-20，结论在 [01-2 三级预测流水与 override](01-2-bpu-override.md) 的"精读结论"）：BPU 三级的 override 机制。RTL 看 [`BPU.scala`](../../XiangShan/src/main/scala/xiangshan/frontend/BPU.scala#L704) 的 `s2_redirect`、`s3_redirect` 与 [`overrideBubble`](../../XiangShan/src/main/scala/xiangshan/frontend/BPU.scala#L1088)；gem5 看 [`pred/ftb/decoupled_bpred.cc`](../../GEM5-XS/src/cpu/pred/ftb/decoupled_bpred.cc#L798) 的空泡处理。问题：两边各自在哪一拍发现"后级推翻前级"，补几个空泡。
+- [x] 前端精读 2（2026-10-24，结论在 [01-1 解耦前端：FTQ 与 FTB](01-1-ftq-decoupled-frontend.md)）：FTQ 的四个指针（bpuPtr、ifuPtr、pfPtr、commPtr，另有 ifuWbPtr、robCommPtr）各自推进条件。gem5 的对应物是 FSQ（[`decoupled_bpred.cc`](../../GEM5-XS/src/cpu/pred/ftb/decoupled_bpred.cc#L1817)），不是同名的 [`fetch_target_queue.cc`](../../GEM5-XS/src/cpu/pred/ftb/fetch_target_queue.cc#L15)。问题：取指落后预测多少、谁反压谁。
 - [ ] 前端精读 3：IFU f0 到 f3 各拍做什么（f1 算 PC、f2 等 ICache 回数据加异常合并、f3 预译码加 MMIO 状态机），`f3_fire = toIbuffer.fire`。gem5 的 fetch 把这几拍压成 `fetchToDecodeDelay = 2`。这是第一个"级划分的时序考量"样本。
+- [ ] 前端精读 4：ICache 与 ITLB。RTL 看 [`ICache.scala`](../../XiangShan/src/main/scala/xiangshan/frontend/icache/ICache.scala#L590) 的 mainPipe、missUnit、IPrefetch 和 [`Frontend.scala`](../../XiangShan/src/main/scala/xiangshan/frontend/Frontend.scala#L172) 的 ITLB；gem5 看 fetch 怎么发 L1I 请求、ITLB 缺失怎么处理。问题：命中、ICache 缺失、ITLB 缺失三种情况各要几拍，两边是否一致；gem5 有没有 FDIP。
 - [ ] 后端走读：decode（含 fusion）→ rename（CompressUnit、snapshot、move 消除）→ NewDispatch → IssueQueue（enq、select、og0 读寄存器、og1 旁路）→ exu → wb → Rob。只看每级的 valid-ready 和重定向恢复，不深挖 LSU（已有 LSU 核心概念 - 访存的一生与六大机制）。
 - [ ] 同步做仓库 `Docs/cmodel-interview` 的 04 流水线 stall/flush 与 08 事件队列，手感对应上面两种建模方式。
 

@@ -5,7 +5,23 @@
 
 > 学习计划第一步的起点，见 [xiangshan-correlation 学习计划 - 六大思想视角](README.md)。本篇是 2026-10-20 只读勘察本仓库源码得到的"地图"，不是精读结论：标 ✅ 的是直接从代码或配置读出的事实，标 ❓ 的是待核实。目的是让后面每次精读都有坐标。
 >
-> 读法约定：RTL 说"硬件用什么兑现，哪根信号在哪一拍"，gem5 说"该发生什么、隔几拍"。两边都读的时候，先问**这一级在 RTL 是一个寄存器边界还是一个模块边界**，再问 gem5 用哪个 delay 参数或哪个 TimeBuffer 位置来代替它。课本（Computer Architecture A Quantitative Approach Ch3）没有的东西用 🆕 标出。
+> 读法约定：RTL 和 gem5 描述的是同一条流水线，但写法不同。
+>
+> - **RTL 写的是实现**：每一拍都靠一个真实的寄存器来实现。读 RTL 要弄清"哪根信号在第几拍有效，是哪个寄存器把它从上一拍传过来的"。
+> - **gem5 写的是行为和延迟**：只说每一级做什么、相邻两级之间隔几拍，不建模寄存器。两级之间用 `TimeBuffer` 连接：上游写 `getWire(0)`（[`decode.cc:207`](../../GEM5-XS/src/cpu/o3/decode.cc#L207)），下游读 `getWire(-delay)`（[`decode.cc:216`](../../GEM5-XS/src/cpu/o3/decode.cc#L216) 的 `fetchQueue->getWire(-fetchToDecodeDelay)`），每拍结束时统一 `advance()`（[`cpu.cc:586`](../../GEM5-XS/src/cpu/o3/cpu.cc#L586)）✅。所以 `delay = N` 就相当于 RTL 里两级之间隔着 N 个寄存器。
+>
+> 对照着读时分两步：
+>
+> 1. **先在 RTL 里数寄存器。** RTL 里的"一级"有两种来源，和拍数的关系不一样：
+>    - **寄存器边界**：模块内部的流水寄存器，例如 IFU 的 f0→f3、BPU 的 s0→s3。每过一个这样的边界就要花一拍。
+>    - **模块边界**：两个 Scala 模块之间的接口。端口本身只是连线，要不要花一拍，取决于接口处有没有寄存器。例如 Rename 读 RAT 的请求在 Decode 级就已经发出，跨了模块却不多花一拍。
+>
+>    所以，模块边界不一定是拍数的边界，一个模块内部也可能有好几拍。
+> 2. **再到 gem5 里找对应的延迟参数。** RTL 模块内部的那几拍，gem5 一般不单独分级，而是合并成一个参数来表示，例如 BPU 各级对应每个预测器的 `numDelay`。IFU 的 f0→f3 加上 IBuffer 这一段，在 gem5 里只有 `fetchToDecodeDelay = 2` 加一个 fetchQueue，两边总拍数是否相等还没核实 ❓。RTL 两个模块之间的边界，在 gem5 里对应一个 stage 加一个 TimeBuffer 位置，例如 `decodeToRenameDelay = 1`。
+>
+> 比较时，看的是一段路径的总拍数，不是级名能不能一一对上。总拍数对不上的地方就是 correlation 要重点检查的地方。例如 RTL 有独立的 [`NewDispatch`](../../XiangShan/src/main/scala/xiangshan/backend/dispatch/NewDispatch.scala#L49) 模块，而 gem5 的 [`enableDispatchStage`](../../GEM5-XS/src/cpu/o3/BaseO3CPU.py#L145) 默认为 False，[`kmhv2.py`](../../GEM5-XS/configs/example/kmhv2.py) 也没有打开它（见下文）。
+>
+> 课本（Computer Architecture A Quantitative Approach Ch3）没有的东西用 🆕 标出。
 
 ---
 
@@ -15,9 +31,30 @@
 
 ![昆明湖架构图（官方，XiangShan/images）](../../XiangShan/images/xs-arch-kunminghu.svg)
 
-下面这张是本文的主线：同一条前端流水，上排 RTL、下排 gem5，每一级标出模块名和 gem5 对应的 delay 参数。深色块是两边建模方式不同的地方。
+下面两张把流水线分成前端和后端，上排 RTL、下排 gem5，每一级标出模块名和 gem5 对应的 delay 参数。深色块是两边建模方式不同的地方。
+
+**前端**（预测、取指、ICache 与 ITLB，到 IBuffer 为止）：前端的范围以 RTL 的 [`Frontend.scala`](../../XiangShan/src/main/scala/xiangshan/frontend/Frontend.scala#L106) 为准，里面有 BPU、FTQ、IFU、IBuffer，以及 [ITLB](../../XiangShan/src/main/scala/xiangshan/frontend/Frontend.scala#L172)、ICache（含 IPrefetch）、PMP 和 InstrUncache；它的出口是 [`io.backend.cfVec <> ibuffer.io.out`](../../XiangShan/src/main/scala/xiangshan/frontend/Frontend.scala#L439)。Decode 在后端的 [`CtrlBlock`](../../XiangShan/src/main/scala/xiangshan/backend/CtrlBlock.scala#L92) 里，图上画出来只是标明前端把指令交给谁，所以两张图都有译码这一列。
 
 ![前端级划分对照：RTL 与 gem5](figs/drawn/frontend_rtl_vs_gem5.png)
+
+从前端图读出的五点：
+
+- **ICache 与 ITLB 的容量两边一致** ✅。RTL ICache 是 [256 组 × 4 路 × 64 B](../../XiangShan/src/main/scala/xiangshan/frontend/icache/ICache.scala#L53) = 64 KB，ITLB [48 项](../../XiangShan/src/main/scala/xiangshan/Parameters.scala#L270)；gem5 L1I [64 kB、4 路](../../GEM5-XS/configs/common/Options.py#L157)，TLB [48 项](../../GEM5-XS/src/arch/riscv/RiscvTLB.py#L70)，检查点模式下走时序 MMU，不是功能 TLB（[`xiangshan.py:256`](../../GEM5-XS/configs/common/xiangshan.py#L256)）。差别在访问方式：RTL 一次取两行、有 FTQ 驱动的预取，gem5 是 classic cache，FDIP 是否建模待核实（清单第 5 条）。
+- **预测级的拍数在常见情形下相等，但建模方式不同** ✅。RTL 的 BPU 是 s0→s3 真流水：uFTB 的结果在 s1 就写进 FTQ，后级推翻时再回头改 FTQ、冲掉 IFU。gem5 在同一个 tick 里把三级都算完，只把最终结果交给 FTQ，差的拍数用 `numOverrideBubbles` 停几拍来补。有两种边角情形空泡数不等，其中一种让 gem5 前端更快，见 [01-2](01-2-bpu-override.md)。
+- **队列的有效深度两边都是 64** ✅。RTL FTQ 对应 gem5 FSQ，gem5 FTQ 的 128 在 kmhv2 下用不满，见 [01-1](01-1-ftq-decoupled-frontend.md)。
+- **取指到译码的总拍数还没对上，是前端最大的嫌疑** ❓。RTL 是 IFU f0→f3 四级寄存器加 IBuffer，IBuffer 为空时可以直通，拍数随状态变化。gem5 是固定的 `fetchToDecodeDelay = 2` 加 fetchQueue，见 [01-3](01-3-ifu.md)。
+- **前端内部的反馈线不同**。RTL 有两条：BPU 的 s2/s3 推翻前级时冲掉 IFU 已经发出的取指（`flushFromBpu`）；IFU 在 f3 预译码时发现预测错误，写回 FTQ（`wb_redirect`）。gem5 没有第一条，因为它的 FTQ 收不到错误的预测项，IFU 不会白取。第二种纠错在 gem5 里由 decode 发 squash 回 BPU。所以 RTL 多付一次 IFU 作废的代价；预译码纠错从 f3 发出和从 decode 发出，到重新取指相差几拍，还没核实 ❓。
+
+**后端**（译码到提交）：
+
+![后端级划分对照：RTL 与 gem5](figs/drawn/backend_rtl_vs_gem5.png)
+
+从后端图读出的两点：
+
+- **IQ 选中到进 EXU，两边都是 2 拍** ✅。RTL 先经过 DataPath 的 [`s1_toExuData`](../../XiangShan/src/main/scala/xiangshan/backend/datapath/DataPath.scala#L493) 寄存器，这一拍是 og0，读 RF 或 RegCache；再经过 BypassNetwork 之后的 [`NewPipelineConnect`](../../XiangShan/src/main/scala/xiangshan/backend/Backend.scala#L554)，这一拍是 og1。gem5 只用一个 [`scheduleToExecDelay = 2`](../../GEM5-XS/src/cpu/o3/FuncScheduler.py#L86) 表示这两拍：`KunminghuScheduler` 的整数、访存、浮点 IQ 都取这个默认值，只有 [`vecIQ0`](../../GEM5-XS/configs/common/FUScheduler.py#L165) 是 3。
+- **译码到派发，两边也都是 2 拍** ✅。RTL 经过两个流水寄存器，[decode→rename](../../XiangShan/src/main/scala/xiangshan/backend/CtrlBlock.scala#L578) 和 [rename→dispatch](../../XiangShan/src/main/scala/xiangshan/backend/CtrlBlock.scala#L704)，然后 NewDispatch 在[当拍写进 IQ](../../XiangShan/src/main/scala/xiangshan/backend/CtrlBlock.scala#L752)。gem5 是 `decodeToRenameDelay = 1` 加 `renameToIEWDelay = 1`，派发在 IEW 里完成，没有独立的一级。指令进 IQ 后最早在哪一拍能被选中，两边是否一致还没核实 ❓。
+
+两张图放在一起看：后端已核对的各段两边都能逐拍对齐，差异集中在前端。这和 78 号点 RTL 前端多出约 108 万 slot 的方向一致。
 
 ```
 RTL (KMH-V2)                                       gem5 (XS-GEM5 KMH-V2, DecoupledBPUWithFTB)
@@ -25,7 +62,8 @@ RTL (KMH-V2)                                       gem5 (XS-GEM5 KMH-V2, Decoupl
 BPU  s0 → s1 → s2 → s3   (3 级预测流水, numOfStage=3) numStages = 3, 每个预测器带 numDelay
         │ uFTB  │ TAGE-SC+FTB │ ITTAGE+RAS               uRAS/uFTB 0, TAGE/FTB/RAS 1, ITTAGE 2
         ▼                                                ▼
-FTQ  (FtqSize = 64, bpuPtr/ifuPtr/pfPtr/commPtr)   fetch_target_queue (ftq_size = 128 ❓)
+FTQ  (FtqSize = 64, bpuPtr/ifuPtr/pfPtr/commPtr)   fetch_stream_queue (fsq_size = 64，对应 RTL FTQ)
+                                                   └→ fetch_target_queue (ftq_size = 128，不起作用)
         ▼                                                ▼
 IFU  f0 → f1 → f2 → f3   (f3_fire = toIbuffer.fire)  fetch stage  ─ fetchToDecodeDelay = 2
         │ 发 ICache │ 算 PC │ 等 ICache 回数据+异常合并 │ 预译码+RVC 展开+MMIO 状态机
@@ -51,146 +89,34 @@ EXU → WbArbiter → ROB (160 项, CommitWidth 8)       execute → writeback �
 
 ---
 
-## 1. 前端：课本之外的四件事
+## 1. 细节分篇
 
-### 1.1 🆕 解耦前端（decoupled frontend）与 FTQ
+每一级的细节单独成文，本篇只留地图。前三篇是前端（学习计划第一步的重点），第四篇是后端。
 
-官方前端总览（南湖版文档，结构与昆明湖 V2 相同；ICache 容量等参数以 V2 为准）：
-
-![前端总览（官方）](figs/official/frontend.png)
-
-课本的取指是"PC → ICache → 译码"，分支预测只是给下一个 PC。香山把预测和取指拆成两条独立流水，中间放一个 **FTQ（Fetch Target Queue）**：BPU 以"预测块"为单位往 FTQ 里填（起始地址、块内最多 `numBr = 2` 条分支、跳转目标），IFU 按自己的节奏从 FTQ 取请求去访问 ICache。好处是预测器可以跑在取指前面，取指停了预测也不停；FTQ 里排着的预测块还能用来做取指方向的指令预取（香山前端 README 引的 Ishii 2020/2021 FDIP 两篇就是这个）。
-
-官方的 FTQ 接口图，可以看到 FTQ 同时面对 BPU（pred / meta 进、训练出）、IFU（req 出、pdInfo / redirect 回）、后端（exu redirect / commit 进、pc 读出）和预取：
-
-![FTQ 与各模块的接口（官方）](figs/official/ftq.svg)
-
-- RTL：[`frontend/NewFtq.scala`](../../XiangShan/src/main/scala/xiangshan/frontend/NewFtq.scala#L461)，[`FtqSize = 64`](../../XiangShan/src/main/scala/xiangshan/Parameters.scala#L157)，四个指针 `bpuPtr`（预测写入）、`ifuPtr`（取指读出）、`pfPtr`（预取）、`commPtr`（提交回收）✅。
-- gem5：[`cpu/pred/ftb/fetch_target_queue.cc`](../../GEM5-XS/src/cpu/pred/ftb/fetch_target_queue.cc#L15)，[`DecoupledBPUWithFTB.ftq_size = 128`](../../GEM5-XS/src/cpu/pred/BranchPredictor.py#L943) 是 Python 默认值，[`kmhv2.py`](../../GEM5-XS/configs/example/kmhv2.py) 和 [`xiangshan.py`](../../GEM5-XS/configs/common/xiangshan.py#L361) 都没有覆盖（[`kmhv3.py`](../../GEM5-XS/configs/example/kmhv3.py#L95) 才改成 256）✅。所以 **gem5 的 FTQ 是 RTL 的两倍深（128 对 64）**。这会影响"预测跑多远"和反压时机，是前端 slot 差的第一个嫌疑。
-- 思想归类：FTQ 是 Prediction 和 Parallelism 的接合处——把"猜"和"取"解耦成两条并行流水。
-
-### 1.2 🆕 FTB 而不是 BTB，预测块而不是单条分支
-
-课本的 BTB 按单条分支的 PC 索引。香山的 **FTB（Fetch Target Block）** 按预测块的起始 PC 索引，一个表项记录这个块里最多 2 条分支的位置和目标，再加一个"块在哪结束"。于是一次查表给出的是"从这里取多少字节、在哪分叉"，天然配合 FTQ。
-
-- RTL：[`frontend/FTB.scala`](../../XiangShan/src/main/scala/xiangshan/frontend/FTB.scala#L465)，[`FtbSize = 2048`](../../XiangShan/src/main/scala/xiangshan/Parameters.scala#L99)，4 路，tag 20 位；[`FauFTB.scala`](../../XiangShan/src/main/scala/xiangshan/frontend/FauFTB.scala#L76) 是全相联的小 FTB（uFTB），放在 s1 级零延迟出结果 ✅。
-- gem5：`pred/ftb/` 下的 [`decoupled_bpred.cc`](../../GEM5-XS/src/cpu/pred/ftb/decoupled_bpred.cc) 和 [`ftb.cc`](../../GEM5-XS/src/cpu/pred/ftb/ftb.cc)。[`pred/README.md`](../../GEM5-XS/src/cpu/pred/README.md) 提醒 gem5 里同时存在 BTB 版、FTB 版、Stream 版三种解耦前端，`kmhv2.py` 走的是 [`DecoupledBPUWithFTB`](../../GEM5-XS/src/cpu/pred/BranchPredictor.py#L937)（[`bp_type 为空时的默认分支`](../../GEM5-XS/configs/common/xiangshan.py#L361)）✅。
-
-### 1.3 🆕 三级预测流水与 override
-
-官方的预测流水图（BP1 / BP2 / BP3 对应本文的 s1 / s2 / s3）。看三件事：uBTB 在 BP1 就出目标；FTB、TAGE、RAS 的结果在 BP2 出；SC、ITTAGE 最慢，BP3 才出；每一级的 target calc 都有一根线绕回最左边的 NPC Mux，这就是 override：
-
-![三级预测流水（官方）](figs/official/bpu.svg)
-
-TAGE 和 ITTAGE 的原理图（官方）：
-
-![TAGE（官方）](figs/official/tage.png)
-
-![ITTAGE（官方）](figs/official/ITTAGE.png)
-
-课本的预测器是"一拍出结果"。香山把预测器按延迟排成三级，每一级都可以推翻前一级：
-
-| 级 | RTL 里谁在这一级 | gem5 `numDelay` | 推翻前级时付出的空泡 |
-| --- | --- | --- | --- |
-| s1 | uFTB（FauFTB） | uFTB 0、uRAS 0 | 0 |
-| s2 | TAGE-SC、FTB、RAS 的投机 push/pop | TAGE 1、FTB 1、RAS 1 | 1 |
-| s3 | ITTAGE、RAS 的 s3 纠错（`s3_recover`） | ITTAGE 2 | 2 |
-
-RTL 的组合顺序在 [`Parameters.scala:124`](../../XiangShan/src/main/scala/xiangshan/Parameters.scala#L124) 的 `branchPredictor` 里写死：`uftb → tage(SC) → ftb → ittage → ras`，后一个的 `resp_in` 接前一个的 `out` ✅。注意这是**组合顺序不是流水级**：[`newRAS.scala:620`](../../XiangShan/src/main/scala/xiangshan/frontend/newRAS.scala#L620) 里 `s2_spec_push/pop` 由 `s2_fire` 驱动，s3 只做纠错 ✅，所以 RAS 的主体在 s2，与 gem5 的 [`FTBRAS.numDelay = 1`](../../GEM5-XS/src/cpu/pred/BranchPredictor.py#L894) 一致；ITTAGE 的结果在 `s2_fire` 时打进 s3 寄存器（[`ITTAGE.scala:460`](../../XiangShan/src/main/scala/xiangshan/frontend/ITTAGE.scala#L460)）✅，对应 gem5 的 [`FTBITTAGE.numDelay = 2`](../../GEM5-XS/src/cpu/pred/BranchPredictor.py#L935)。[`BPU.scala:245`](../../XiangShan/src/main/scala/xiangshan/frontend/BPU.scala#L245) 里 `numOfStage = 3`，[`overrideBubble`](../../XiangShan/src/main/scala/xiangshan/frontend/BPU.scala#L264) 和 `ftqUpdateBubble` 两组线专门给 top-down 记"被后级推翻"和"等 FTQ 更新"的空泡 ✅。
-
-#### 1.3.1 精读结论（2026-10-20）：两边的 override 是两种完全不同的建模，只在常见情形下拍数相等 ✅
-
-官方图没有画 override 的实现细节，下面两张是从代码画出来的。先看 RTL：
-
-![RTL BPU 三级流水与 override（自绘）](figs/drawn/bpu_override_rtl.png)
-
-**RTL 是真流水线，先写后改。** [`BPU.scala`](../../XiangShan/src/main/scala/xiangshan/frontend/BPU.scala)：
-
-- [`io.bpu_to_ftq.resp.valid`](../../XiangShan/src/main/scala/xiangshan/frontend/BPU.scala#L452) 在 **s1** 就为真（`s1_valid && s2_ready`），uFTB 的结果当拍写进 FTQ，`bpuPtr` 前进。
-- s2 用 [`preds_needs_redirect_vec`](../../XiangShan/src/main/scala/xiangshan/frontend/BPU.scala#L606) 把自己的结果和上一拍 s1 写下的比（[`BPU.scala:698`](../../XiangShan/src/main/scala/xiangshan/frontend/BPU.scala#L698)）：目标地址、块内分支数（`lastBrPosOH`）、是否 taken、taken 的是第几条（`cfiIndex`），再加 `fallThruError`。任一不同就 [`s2_redirect`](../../XiangShan/src/main/scala/xiangshan/frontend/BPU.scala#L704)：`s1_flush`，[`npcGen`](../../XiangShan/src/main/scala/xiangshan/frontend/BPU.scala#L707) 以优先级 5 把 s0 的 PC 改成 s2 的目标，同时 FTQ 侧 [`bpuPtr := s2.ftq_idx + 1`](../../XiangShan/src/main/scala/xiangshan/frontend/NewFtq.scala#L760)，并且如果 IFU 已经取走了这一项，`ifuPtr`、`pfPtr` 一并拉回，IFU 的 f0/f1 收到 `flushFromBpu.s2` 被冲掉。
-- s3 同理，和寄存下来的 [`previous_s2_pred`](../../XiangShan/src/main/scala/xiangshan/frontend/BPU.scala#L792) 比（[`BPU.scala:851`](../../XiangShan/src/main/scala/xiangshan/frontend/BPU.scala#L851)）：`real_br_taken_mask`（但两边都 taken 第一槽时放过）、目标、`fallThruError`、`ftbMultiHit`。`s3_redirect` 冲掉 s1 和 s2。
-- 空泡数：s2 推翻让预测流滑 1 拍，s3 推翻滑 2 拍；[`overrideBubble(0) := s2_redirect`](../../XiangShan/src/main/scala/xiangshan/frontend/BPU.scala#L1088)、`overrideBubble(1) := s3_redirect` 把这记进 top-down 的 `OverrideBubble`。
-
-再看 gem5，注意它没有级间寄存器，三份预测在同一个 tick 里产生：
-
-![gem5 DecoupledBPUWithFTB 的 override 模型（自绘）](figs/drawn/bpu_override_gem5.png)
-
-**gem5 不是流水线，是"同拍算完、事后补空泡"。** [`decoupled_bpred.cc`](../../GEM5-XS/src/cpu/pred/ftb/decoupled_bpred.cc)：
-
-- [`tick()`](../../GEM5-XS/src/cpu/pred/ftb/decoupled_bpred.cc#L625) 里一次把三级预测器全部 [`putPCHistory`](../../GEM5-XS/src/cpu/pred/ftb/decoupled_bpred.cc#L666)，下一拍 [`generateFinalPredAndCreateBubbles()`](../../GEM5-XS/src/cpu/pred/ftb/decoupled_bpred.cc#L798) 从最后一级往前找第一个 valid 的当最终结果，再从 s1 往后数第一个与最终结果 [`match()`](../../GEM5-XS/src/cpu/pred/ftb/stream_struct.hh#L533) 的级，它的序号就是要补的空泡数（`first_hit_stage`）。
-- 补空泡的方式是 BPU 停 N 拍不发新请求（[`numOverrideBubbles`](../../GEM5-XS/src/cpu/pred/ftb/decoupled_bpred.cc#L649) 递减，[`tryEnqFetchStream()`](../../GEM5-XS/src/cpu/pred/ftb/decoupled_bpred.cc#L2163) 等它归零才入队），**FTQ 从来不会收到错的那一项**，IFU 也就不会取错的块。
-- 两个输入在同一拍、一次比较、只用最终结果，这是典型的"functionally equivalent, timing approximated"的 Cmodel 写法。
-
-**什么时候拍数相等，什么时候不等：**
-
-| 三级结果 | RTL 空泡 | gem5 空泡 | 是否一致 |
-| --- | --- | --- | --- |
-| s1 = s2 = s3 | 0 | 0 | 一致 |
-| s1 ≠ s2 = s3 | 1（s2 推翻） | 1 | 一致 |
-| s1 = s2 ≠ s3 | 2（s3 推翻） | 2 | 一致 |
-| s1 ≠ s2 ≠ s3 | 1 + 2 = 3（先 s2 推翻，下一拍 s3 再推翻） | 2 | **RTL 多 1** |
-| 两边都不 taken，但块结束地址或分支数不同 | 1（RTL 比 `lastBrPosOH` 和 fall-through 目标） | 0（gem5 `match()` 在双方都无 taken 槽时直接判匹配） | **gem5 少 1** |
-
-第二种不一致值得优先查：它的方向是让 gem5 前端更快，和 78 号点"RTL 前端 slot 多 108 万、gem5 IPC 高 1.35%"的方向一致。CoreMark 这种小循环体负载，uFTB 和 FTB 对"块在哪结束"的分歧（例如 uFTB 没命中、给了一个默认的 fall-through 长度）可能频繁发生。验证方法：RTL 侧看 `s2_redirect_because_branch_num_diff` 和 `s2_redirect_when_not_taken` 这两个 perf 计数器，gem5 侧看 `overrideCount` 和按原因分的 `overrideFallThruMismatch`、`overrideEndMismatch`；如果 RTL 的不 taken 推翻数远大于 gem5 的 end/fallThru 推翻数，就坐实了。
-
-**第三个差别不在空泡数，在谁被冲掉。** RTL 的 s1 结果已经进了 FTQ，IFU 跟得紧时可能已经按它发了 ICache 请求，推翻时 IFU 的 f0/f1 一起作废；gem5 的 FTQ 只见最终结果，IFU 永远不会白取。IPC 接近 3 的 CoreMark 上 FTQ 大概率是浅的，IFU 紧跟 BPU，这部分损失 RTL 会记到 `OverrideBubble` 之外的取指空泡里。这一条和第二步的 top-down 口径对照直接相关。
-
-**对课本的补充：** 课本讲 override 预测器（H&P 讲 tournament、TAGE 时只给一拍模型），没有讲"先把快的结果交出去再撤回"的流水线实现。RTL 这套 `previous_s1/s2_pred` 寄存加四项比较、`npcGen` 优先级仲裁、FTQ 指针回拉，是设计里真正的时序考量；gem5 把它折叠成一个整数 `numOverrideBubbles`，丢掉的正是"撤回"这半边。
-
-预测器表项对照（✅ 从两边配置读出）：
-
-| 预测器 | RTL | gem5 |
+| 篇 | 内容 | 主要结论 |
 | --- | --- | --- |
-| TAGE | 4 表，sets 4096，hist 8/13/32/119，tag 8（[`Parameters.scala:106`](../../XiangShan/src/main/scala/xiangshan/Parameters.scala#L106)） | 4 表，tableSizes 2048×4，hist 8/13/32/119（[`BranchPredictor.py:913`](../../GEM5-XS/src/cpu/pred/BranchPredictor.py#L913)） |
-| ITTAGE | 5 表，sets 256/256/512/512/512，hist 4/8/13/16/32，tag 9（[`Parameters.scala:112`](../../XiangShan/src/main/scala/xiangshan/Parameters.scala#L112)） | 5 表，256×2 + 512×3，hist 4/8/13/16/32（[`BranchPredictor.py:928`](../../GEM5-XS/src/cpu/pred/BranchPredictor.py#L928)） |
-| SC | 4 表，512 行，hist 0/4/10/16，6 位计数器 | `tage.enableSC` 默认开 |
-| RAS | RasSize 16，RasSpecSize 32（[`Parameters.scala:102`](../../XiangShan/src/main/scala/xiangshan/Parameters.scala#L102)） | FTBRAS 32 项（[`BranchPredictor.py:886`](../../GEM5-XS/src/cpu/pred/BranchPredictor.py#L886)），uRAS 4 项（[`BranchPredictor.py:896`](../../GEM5-XS/src/cpu/pred/BranchPredictor.py#L896)） |
-
-❓ TAGE 的 4096 对 2048：RTL 的 `TageBanks = numBr = 2`，可能是每个 bank 2048 行、共 4096；需要看 [`Tage.scala:162`](../../XiangShan/src/main/scala/xiangshan/frontend/Tage.scala#L162) 的 bank 索引函数确认是"2 bank × 2048"还是真的差一倍。这类"同名不同义"正是第二步要练的眼力。
-
-### 1.4 IFU 的四拍与 gem5 的两拍
-
-官方的 IFU 流水图（IFU0 / IF1 / IF2 / IF3 对应本文 f0 / f1 / f2 / f3）：
-
-![IFU 流水（官方）](figs/official/IFU.png)
-
-RTL [`IFU.scala`](../../XiangShan/src/main/scala/xiangshan/frontend/IFU.scala#L130) ✅：
-
-- f0：从 FTQ 收请求（[`fromFtq.req.fire`](../../XiangShan/src/main/scala/xiangshan/frontend/IFU.scala#L245)），同时向 ICache 发两条 cache line 的请求（`doubleLine` 处理跨行）。[`fromFtq.req.ready := f1_ready && icacheReady`](../../XiangShan/src/main/scala/xiangshan/frontend/IFU.scala#L263)。
-- f1：算出块内每条指令的 PC（[`f1_pc`](../../XiangShan/src/main/scala/xiangshan/frontend/IFU.scala#L291)、`f1_half_snpc`），处理 RVC 的 2 字节对齐。
-- f2：[`f2_fire = f2_valid && f3_ready && icacheRespAllValid`](../../XiangShan/src/main/scala/xiangshan/frontend/IFU.scala#L362)，等 ICache 两行都回来，合并 ITLB/PMP/PBMT 的异常和 MMIO 标志。
-- f3：预译码（`PreDecode`）、RVC 展开、分支信息检查（`checkerOutStage1/2`）、MMIO 状态机（[`mmio_state`](../../XiangShan/src/main/scala/xiangshan/frontend/IFU.scala#L661)）；[`f3_fire = io.toIbuffer.fire`](../../XiangShan/src/main/scala/xiangshan/frontend/IFU.scala#L560)。f3 还会向 FTQ 写回预译码发现的预测错误（[`wb_redirect`](../../XiangShan/src/main/scala/xiangshan/frontend/IFU.scala#L252)），这是前端自己的小重定向，与后端的 `backend_redirect` 分开。
-
-gem5 把这四拍压成 [`fetchToDecodeDelay = 2`](../../GEM5-XS/src/cpu/o3/BaseO3CPU.py#L131)，再加 ICache 访问本身的延迟 ✅。❓ 两边"ICache 命中到指令进 IBuffer/fetchQueue"的总拍数是否一致，是前端 slot 差的第二个候选。
-
-Top-down 在 IFU 里的打标方式 ✅：[`topdown_stages`](../../XiangShan/src/main/scala/xiangshan/frontend/IFU.scala#L161) 是一个 3 深的寄存器链，"只由时钟驱动，不看 valid-ready"，`icacheMissBubble`、[`itlbMissBubble`](../../XiangShan/src/main/scala/xiangshan/frontend/IFU.scala#L159) 两根线在 stage 1 打上 reason（枚举定义在 [`package.scala:963`](../../XiangShan/src/main/scala/xiangshan/package.scala#L963)），然后随链传到 `toIbuffer`。也就是说这个 reason 跟着**拍**走，不跟着**指令**走。第二步要回答的 `ITLBMissBubble` 92 万 slot 却 0 次 PTW，大概率就出在这个"按拍打标"的口径上。
+| [01-1 解耦前端：FTQ 与 FTB](01-1-ftq-decoupled-frontend.md) | FTQ 的四个指针、FDIP 指令预取、gem5 的 FSQ 与 FTQ；FTB 为什么按 PC 索引、表项结构与目标拼接、预测块怎么划分 | RTL FTQ 对应 gem5 FSQ，两边都是 64 ✅；FTB 目标只存低位，高位借块起始 PC ✅ |
+| [01-2 三级预测流水与 override](01-2-bpu-override.md) | FTB 在 s0–s2 的三拍、预测器组合顺序、两边 override 的建模、预测器表项对照 | 常见情形空泡数相等，两种边角情形不等 ✅ |
+| [01-3 IFU 的四拍](01-3-ifu.md) | f0–f3 各拍做什么、gem5 的 `fetchToDecodeDelay`、top-down 按拍打标 | ICache 命中路径总拍数待核实 ❓ |
+| [01-4 后端](01-4-backend.md) | 宏融合、ROB 压缩、重命名快照、move 消除、RegCache、og0/og1 | 走读级，待精读 |
 
 ---
 
-## 2. 后端：课本之外的五件事（走读级，待精读）
+## 2. 待核实清单（按对 78 号点前端差距的嫌疑排序，2026-10-24 重排）
 
-| 🆕 特性 | RTL 位置 | gem5 对应 | 一句话 |
-| --- | --- | --- | --- |
-| 宏融合 | [`decode/FusionDecoder.scala`](../../XiangShan/src/main/scala/xiangshan/backend/decode/FusionDecoder.scala#L538)，`DecodeStage` 有 `fusion` 向量 | [`o3/decode.cc`](../../GEM5-XS/src/cpu/o3/decode.cc#L99) 有 fusion 逻辑 ✅，规则是否同一套 ❓ | 把两条相邻指令合成一个 uop，影响 IPC 的分母 |
-| ROB 压缩 | [`rename/CompressUnit.scala`](../../XiangShan/src/main/scala/xiangshan/backend/rename/CompressUnit.scala#L38)，`needRobFlags`、`instrSizes` | [`RobCompressPolicy = 'kmhv2'`](../../GEM5-XS/src/cpu/o3/BaseO3CPU.py#L223)，`CROB_instPerGroup = 6` ✅ | 多条指令共用一个 ROB 项，160 项的"有效容量"大于 160 |
-| 重命名快照 | [`rename/Snapshot.scala`](../../XiangShan/src/main/scala/xiangshan/backend/rename/Snapshot.scala#L26)，`io.snpt` | ❓ gem5 用 [`robWalkPolicy = 'Replay'`](../../GEM5-XS/src/cpu/o3/BaseO3CPU.py#L158)，`squashWidth = 8` | 分支误预测恢复 RAT 的两种路子：快照 vs 走 ROB |
-| move 消除 | [`Rename.scala`](../../XiangShan/src/main/scala/xiangshan/backend/rename/Rename.scala#L260) 的 `isMove`，不分配物理寄存器 | ❓ | 课本提过，但 RTL 里 walk 时还要特殊处理 `walkIsMove` |
-| RegCache | [`backend/regcache/`](../../XiangShan/src/main/scala/xiangshan/backend/regcache/RegCache.scala#L27)，[`IntRegCacheSize = 16`](../../XiangShan/src/main/scala/xiangshan/Parameters.scala#L208)，DataPath 的 [`s1_RCReadData`](../../XiangShan/src/main/scala/xiangshan/backend/datapath/DataPath.scala#L469) | [`issue_queue.hh`](../../GEM5-XS/src/cpu/o3/issue_queue.hh#L311) 里一个整数专用的 LRU 集合 `regCache`，命中时允许 src1 借用 src0 的读端口（[`TX dynamic port optimization`](../../GEM5-XS/src/cpu/o3/issue_queue.cc#L591)）✅ | Locality 用在寄存器堆上；gem5 用一个 LRU 集合近似，只影响读端口分配，不建数据通路 ❓ 容量是否也是 16 |
-
-发射到执行的两拍 ✅：香山 IssueQueue 出队后不是直接到 EXU，而是经过 **og0**（读寄存器堆或 RegCache）和 **og1**（旁路网络、立即数）两级，`og0Cancel`、`og1Cancel` 可以在这两拍取消已发射的 uop（例如 load 唤醒失败）。[`IssueQueue.scala:52`](../../XiangShan/src/main/scala/xiangshan/backend/issue/IssueQueue.scala#L52) 的 `og0Resp`、`og1Resp`、`og2Resp`（向量才有）就是这个。gem5 的 [`issue_queue.cc`](../../GEM5-XS/src/cpu/o3/issue_queue.cc) 怎么表达这两拍和取消，是后端精读的第一个问题。
-
-一个漂亮的对齐证据 ✅：gem5 [`FUScheduler.py`](../../GEM5-XS/configs/common/FUScheduler.py#L105) 的 `KunminghuScheduler` 把每个发射端口的寄存器读端口号（`IntRD(0,0)`、`IntRD(6,1)` 这类）写得和 RTL [`Parameters.scala:400`](../../XiangShan/src/main/scala/xiangshan/Parameters.scala#L400) 的 `ExeUnitParams` 一模一样。Cmodel 不只是在模仿延迟，还在模仿读端口的争用结构。
-
----
-
-## 3. 待核实清单（按对 78 号点前端差距的嫌疑排序）
-
-1. ~~gem5 FTQ 深度 128 对 RTL 64~~ 已确认是真实差异，待评估影响。
-2. ~~s2/s3 override 的空泡数两边是否等价~~ 已读完，见 1.3.1：常见情形相等，两种边角情形不等，且 RTL 多一份 IFU 作废。下一步用 perf 计数器验证第二种。
-3. ICache 命中路径从发请求到进 IBuffer 的总拍数。
+1. ~~s2/s3 override 的空泡数两边是否等价~~ 已读完，见 [01-2](01-2-bpu-override.md) 的"精读结论"：常见情形相等，两种边角情形不等，且 RTL 多一份 IFU 作废。下一步用 perf 计数器验证第二种。
+2. ICache 命中路径从发请求到进 IBuffer 的总拍数。注意 IBuffer 为空时的 bypass 会让这段拍数随状态变化，gem5 的 `fetchToDecodeDelay = 2` 是固定值。
+3. 预译码纠错的拍数：RTL 在 IFU f3 发现并写回 FTQ（`wb_redirect`），gem5 由 decode 发 squash；两边从发现错误到重新取指各隔几拍。
 4. TAGE 4096 对 2048 是不是 bank 数的差。
-5. `ITLBMissBubble` 按拍打标的确切条件（第二步）。
-6. gem5 宏融合规则是否与 RTL 同一套；regCache 容量；重命名快照对应 `robWalkPolicy`。
-7. 向量物理寄存器数不一致（128/22 对 192/32），SPEC 向量化负载前要对齐。
+5. gem5 是否建模了 FTQ 驱动的指令预取（FDIP），见 [01-1](01-1-ftq-decoupled-frontend.md)。若未建模，ICache 缺失多的负载上 gem5 前端停顿偏多；CoreMark 代码小，影响应不大。
+6. `ITLBMissBubble` 按拍打标的确切条件（第二步）。
+7. 指令进 IQ 后最早在哪一拍能被选中，见 §0 后端图：RTL 是 NewDispatch 当拍写进 IQ 表项，gem5 是派发在 IEW 里完成后插入 issue_queue。两边差一拍就会拉长所有相关指令的唤醒链，是后端 slot gem5 多出 41 万的候选之一。
+8. gem5 宏融合规则是否与 RTL 同一套；regCache 容量；重命名快照对应 `robWalkPolicy`。
+9. 向量物理寄存器数不一致（128/22 对 192/32），SPEC 向量化负载前要对齐。
+
+已排除或仅作备注：
+
+- ~~gem5 FTQ 深度 128 对 RTL 64~~ 已排除（2026-10-24）：RTL FTQ 对应的是 gem5 FSQ，两边都是 64，gem5 FTQ 的 128 碰不到，见 [01-1](01-1-ftq-decoupled-frontend.md)。
+- gem5 配置脚本疑似 bug：[`xiangshan.py:353`](../../GEM5-XS/configs/common/xiangshan.py#L353) 判断 BTB 的 `if` 被注释掉，loop predictor、loop buffer、jump-ahead 无条件被关闭（第 336 行先把 loop predictor 置为打开）。对 kmhv2 结果是三者都关，不影响当前对照；以后要打开它们时注意。
 
 每核实一条，把本篇对应的 ❓ 改成 ✅ 并写一行结论；结论里带数字的部分放仓库 `Docs/`，本篇只留指针。

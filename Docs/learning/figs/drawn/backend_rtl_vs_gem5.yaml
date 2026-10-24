@@ -1,0 +1,67 @@
+title: "后端级划分对照：KMH-V2 RTL（上）与 XS-GEM5（下）"
+# RTL：decode→rename PipelineConnect（CtrlBlock.scala:578），rename→dispatch PipeGroupConnect（CtrlBlock.scala:704），
+# dispatch→IQ 直连（CtrlBlock.scala:752），IQ 出队后 DataPath 的 s1_toExuData 寄存器（DataPath.scala:493）= og0 读 RF，
+# BypassNetwork = og1，再经 NewPipelineConnect 进 EXU（Backend.scala:554）。
+# gem5：decodeToRenameDelay / renameToIEWDelay / iewToCommitDelay（BaseO3CPU.py:137、142、151），enableDispatchStage = False（:145），
+# IQ 到执行 scheduleToExecDelay = 2（FuncScheduler.py:86，KunminghuScheduler 的 int/mem/fp IQ 都用默认值，vecIQ0 为 3）。
+stages:
+  - {id: D, sub: "译码"}
+  - {id: R, sub: "重命名"}
+  - {id: P, sub: "派发"}
+  - {id: I, sub: "发射队列"}
+  - {id: O0, sub: "og0 读寄存器"}
+  - {id: O1, sub: "og1 旁路"}
+  - {id: X, sub: "执行"}
+  - {id: C, sub: "写回 / 提交"}
+lanes:
+  - {id: rtl, name: "RTL"}
+  - {id: g5, name: "gem5"}
+nodes:
+  - {id: r_dec, type: block, label: "Decode ×6\n+Fusion", stage: D, lane: rtl}
+  - {id: r_p1, type: reg, label: "pipe", between: [D, R], lane: rtl}
+  - {id: r_ren, type: block, label: "Rename ×6\nCompress·Snapshot", stage: R, lane: rtl}
+  - {id: r_p2, type: reg, label: "pipe", between: [R, P], lane: rtl}
+  - {id: r_dp, type: block, label: "NewDispatch\n选 IQ", stage: P, lane: rtl, hl: true}
+  - {id: r_iq, type: fifo, label: "IssueQueue\n24 项 ×N", stage: I, lane: rtl}
+  - {id: r_p3, type: reg, label: "s1", between: [I, O0], lane: rtl}
+  - {id: r_og0, type: block, label: "读 RF\n/ RegCache", stage: O0, lane: rtl, hl: true}
+  - {id: r_og1, type: block, label: "Bypass\nNetwork", stage: O1, lane: rtl}
+  - {id: r_p4, type: reg, label: "pipe", between: [O1, X], lane: rtl}
+  - {id: r_exu, type: block, label: "EXU", stage: X, lane: rtl}
+  - {id: r_rob, type: block, label: "WbArbiter → ROB 160\nCommit ×8", stage: C, lane: rtl}
+  - {id: g_dec, type: block, label: "decode ×6\n+fusion", stage: D, lane: g5}
+  - {id: g_p1, type: reg, label: "delay 1", between: [D, R], lane: g5}
+  - {id: g_ren, type: block, label: "rename ×6\nRobCompress kmhv2", stage: R, lane: g5}
+  - {id: g_p2, type: reg, label: "delay 1", between: [R, P], lane: g5}
+  - {id: g_dp, type: block, label: "IEW 内派发\n无独立一级", stage: P, lane: g5, hl: true}
+  - {id: g_iq, type: fifo, label: "issue_queue\nKunminghu", stage: I, lane: g5}
+  - {id: g_inf, type: block, label: "inflightIssues\nscheduleToExecDelay = 2", stage: O0, lane: g5, hl: true}
+  - {id: g_exu, type: block, label: "execute\nopLat 查表", stage: X, lane: g5}
+  - {id: g_p4, type: reg, label: "delay 1", between: [X, C], lane: g5}
+  - {id: g_rob, type: block, label: "commit\nROB 160, ×8", stage: C, lane: g5}
+edges:
+  - "r_dec -> r_p1"
+  - "r_p1 -> r_ren"
+  - "r_ren -> r_p2"
+  - "r_p2 -> r_dp"
+  - "r_dp -> r_iq : 当拍入队"
+  - "r_iq -> r_p3 : select"
+  - "r_p3 -> r_og0"
+  - "r_og0 -> r_og1"
+  - "r_og1 -> r_p4"
+  - "r_p4 -> r_exu"
+  - "r_exu -> r_rob"
+  - "r_og1 ~> r_iq : og0/og1Cancel | fb"
+  - "r_rob ~> r_ren : 快照恢复 + walk | fb hl via=top pos=src"
+  - "g_dec -> g_p1"
+  - "g_p1 -> g_ren"
+  - "g_ren -> g_p2"
+  - "g_p2 -> g_dp"
+  - "g_dp -> g_iq"
+  - "g_iq -> g_inf : schedule"
+  - "g_inf -> g_exu"
+  - "g_exu -> g_p4"
+  - "g_p4 -> g_rob"
+  - "g_exu ~> g_iq : wake / cancel | fb"
+  - "g_rob ~> g_ren : walk (Replay) | fb hl via=top pos=src"
+legend: {reg: 级间寄存器 / TimeBuffer 延迟, fb: 取消/恢复, hl: 建模方式差异}

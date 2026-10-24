@@ -1,0 +1,145 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="590" viewBox="0 0 900 590" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif">
+  <!-- 手写 SVG：KMH-V2 FTB 表项结构与 PC 拼接（FTB.scala、BPU.scala、FrontendBundle.scala） -->
+  <rect width="900" height="590" fill="#ffffff"/>
+  <text x="60" y="28" font-size="16" font-weight="bold" fill="#222">KMH-V2 FTB：表项结构与 PC 拼接</text>
+  <text x="60" y="47" font-size="12" fill="#666">start = 预测块起始 PC；VAddrBits = 50，指令 2 字节对齐（bit0 恒为 0）；颜色：蓝 = 借 start 的高位，橙 = 目标低位，绿 = 块结束位置</text>
+
+  <!-- ① 查表 -->
+  <text x="60" y="76" font-size="13" font-weight="bold" fill="#222">① 用 start 查表：2048 项 = 512 组 × 4 路，tag 只存 20 位</text>
+  <g stroke="#555" stroke-width="1">
+    <rect x="60"  y="86" width="312" height="30" fill="#f4f4f4"/>
+    <rect x="372" y="86" width="312" height="30" fill="#e8e8e8"/>
+    <rect x="684" y="86" width="140" height="30" fill="#e8e8e8"/>
+    <rect x="824" y="86" width="16"  height="30" fill="#ffffff"/>
+  </g>
+  <g font-size="12" text-anchor="middle" fill="#222">
+    <text x="216" y="106" fill="#888">pc[49:30] 不参与</text>
+    <text x="528" y="106">tag = pc[29:10]</text>
+    <text x="754" y="106">组号 pc[9:1]</text>
+    <text x="832" y="106">0</text>
+    <text x="754" y="132" font-size="11" fill="#666">再与 pc[12:4] 异或打散</text>
+  </g>
+
+  <!-- ② 表项 -->
+  <text x="60" y="162" font-size="13" font-weight="bold" fill="#222">② 一个表项（FTBEntryWithTag）</text>
+  <g font-size="11" text-anchor="middle" fill="#444">
+    <text x="280" y="180">brSlots(0)：条件分支</text>
+    <text x="515" y="180">tailSlot：jal/jalr，或第 2 条分支</text>
+  </g>
+  <g stroke="#666" stroke-width="1" fill="none">
+    <path d="M168,192 v-6 H392 v6"/>
+    <path d="M396,192 v-6 H634 v6"/>
+  </g>
+  <g stroke="#555" stroke-width="1">
+    <rect x="60"  y="196" width="70" height="48" fill="#e8e8e8"/>
+    <rect x="130" y="196" width="36" height="48" fill="#ffffff"/>
+    <rect x="166" y="196" width="30" height="48" fill="#ffffff"/>
+    <rect x="196" y="196" width="44" height="48" fill="#ffffff"/>
+    <rect x="240" y="196" width="66" height="48" fill="#fde4c4"/>
+    <rect x="306" y="196" width="44" height="48" fill="#dbe4f0"/>
+    <rect x="350" y="196" width="44" height="48" fill="#ffffff"/>
+    <rect x="394" y="196" width="30" height="48" fill="#ffffff"/>
+    <rect x="424" y="196" width="44" height="48" fill="#ffffff"/>
+    <rect x="468" y="196" width="80" height="48" fill="#fde4c4"/>
+    <rect x="548" y="196" width="44" height="48" fill="#dbe4f0"/>
+    <rect x="592" y="196" width="44" height="48" fill="#ffffff"/>
+    <rect x="636" y="196" width="52" height="48" fill="#d5ecd4"/>
+    <rect x="688" y="196" width="40" height="48" fill="#dbe4f0"/>
+    <rect x="728" y="196" width="70" height="48" fill="#ffffff"/>
+    <rect x="798" y="196" width="42" height="48" fill="#ffffff"/>
+  </g>
+  <g font-size="11" text-anchor="middle" fill="#222">
+    <text x="95"  y="216">tag</text>
+    <text x="148" y="216">valid</text>
+    <text x="181" y="216">valid</text>
+    <text x="218" y="216">offset</text>
+    <text x="273" y="216">lower</text>
+    <text x="328" y="216">tarStat</text>
+    <text x="372" y="216">sharing</text>
+    <text x="409" y="216">valid</text>
+    <text x="446" y="216">offset</text>
+    <text x="508" y="216">lower</text>
+    <text x="570" y="216">tarStat</text>
+    <text x="614" y="216">sharing</text>
+    <text x="662" y="216">pftAddr</text>
+    <text x="708" y="216">carry</text>
+    <text x="763" y="216" font-size="10">call·ret·jalr</text>
+    <text x="819" y="216">其他</text>
+  </g>
+  <g font-size="11" text-anchor="middle" fill="#777">
+    <text x="95"  y="235">20</text>
+    <text x="148" y="235">1</text>
+    <text x="181" y="235">1</text>
+    <text x="218" y="235">4</text>
+    <text x="273" y="235">12</text>
+    <text x="328" y="235">2</text>
+    <text x="372" y="235">1</text>
+    <text x="409" y="235">1</text>
+    <text x="446" y="235">4</text>
+    <text x="508" y="235">20</text>
+    <text x="570" y="235">2</text>
+    <text x="614" y="235">1</text>
+    <text x="662" y="235">4</text>
+    <text x="708" y="235">1</text>
+    <text x="763" y="235">3</text>
+    <text x="819" y="235">3</text>
+  </g>
+  <g font-size="12" fill="#444">
+    <text x="60" y="266">offset：分支在块内第几个 2 字节（0–15，块最长 32 字节），分支自身 PC = start + offset × 2。</text>
+    <text x="60" y="284">两个 slot 最多记 2 条控制流指令：分支 + 跳转，或分支 + 分支（第 2 条借 tailSlot，sharing = 1，只用 lower 的低 12 位）。</text>
+  </g>
+
+  <!-- ③ 拼 PC -->
+  <text x="60" y="318" font-size="13" font-weight="bold" fill="#222">③ 拼出地址：表项只存低位，高位借 start 的</text>
+  <text x="60" y="336" font-size="12" fill="#666">tarStat 在写表时比较目标与 start 的高位得出：相同 FIT 取 +0，目标更大 OVF 取 +1，目标更小 UDF 取 −1</text>
+
+  <g font-size="12" fill="#222">
+    <text x="60" y="362" font-weight="bold">条件分支目标</text>
+    <text x="60" y="378" font-size="11" fill="#666">brSlot，或 sharing 的 tailSlot</text>
+    <text x="60" y="410" font-weight="bold">跳转目标</text>
+    <text x="60" y="426" font-size="11" fill="#666">tailSlot，sharing = 0</text>
+    <text x="60" y="458" font-weight="bold">块结束 fallThrough</text>
+    <text x="60" y="474" font-size="11" fill="#666">块内都不跳时的下一个块</text>
+  </g>
+  <g stroke="#555" stroke-width="1">
+    <rect x="230" y="350" width="451" height="30" fill="#dbe4f0"/>
+    <rect x="681" y="350" width="147" height="30" fill="#fde4c4"/>
+    <rect x="828" y="350" width="12"  height="30" fill="#ffffff"/>
+    <rect x="230" y="398" width="354" height="30" fill="#dbe4f0"/>
+    <rect x="584" y="398" width="244" height="30" fill="#fde4c4"/>
+    <rect x="828" y="398" width="12"  height="30" fill="#ffffff"/>
+    <rect x="230" y="446" width="549" height="30" fill="#dbe4f0"/>
+    <rect x="779" y="446" width="49"  height="30" fill="#d5ecd4"/>
+    <rect x="828" y="446" width="12"  height="30" fill="#ffffff"/>
+  </g>
+  <g font-size="12" text-anchor="middle" fill="#222">
+    <text x="455" y="370">start[49:13]，按 tarStat 取 +0 / +1 / −1</text>
+    <text x="754" y="370">lower[11:0]</text>
+    <text x="834" y="370">0</text>
+    <text x="407" y="418">start[49:21]，按 tarStat 取 +0 / +1 / −1</text>
+    <text x="706" y="418">lower[19:0]</text>
+    <text x="834" y="418">0</text>
+    <text x="504" y="466">start[49:5]，carry = 1 时 +1（跨过 32 字节对齐边界）</text>
+    <text x="803" y="466" font-size="11">pftAddr</text>
+    <text x="834" y="466">0</text>
+  </g>
+
+  <!-- ④ 选下一个块 -->
+  <text x="60" y="510" font-size="13" font-weight="bold" fill="#222">④ 选出下一个块的 start：按块内顺序，第一个预测为跳的 slot 胜出</text>
+  <g stroke="#555" stroke-width="1">
+    <rect x="60"  y="520" width="270" height="60" fill="#fde4c4"/>
+    <rect x="345" y="520" width="255" height="60" fill="#d5ecd4"/>
+    <rect x="615" y="520" width="225" height="60" fill="#f4f4f4"/>
+  </g>
+  <g font-size="12" text-anchor="middle" fill="#222">
+    <text x="195" y="540" font-weight="bold">命中，且有 slot 预测为跳</text>
+    <text x="195" y="557">→ 第一个跳的 slot 的目标</text>
+    <text x="195" y="573" font-size="11" fill="#555">ret / jalr 由后级的 RAS、ITTAGE 改写</text>
+    <text x="472" y="540" font-weight="bold">命中，但都不跳</text>
+    <text x="472" y="557">→ fallThrough</text>
+    <text x="472" y="573" font-size="11" fill="#555">pftAddr 不合法时按 start + 32</text>
+    <text x="727" y="540" font-weight="bold">未命中</text>
+    <text x="727" y="557">→ start + 32</text>
+    <text x="727" y="573" font-size="11" fill="#555">按满 32 字节顺序取</text>
+  </g>
+</svg>
