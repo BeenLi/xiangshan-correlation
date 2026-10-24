@@ -13,3 +13,8 @@
 /workload-builder/build_coremark.log
 /XiangShan/build_emu.log
 /checkpoints/restorers/LibCheckpointAlpha-gem5-kmhv2/*.log
+
+# Metals 语言服务器缓存
+.metals/
+.bloop/
+.bsp/

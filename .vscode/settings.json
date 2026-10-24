@@ -1,3 +1,12 @@
 {
-    "C_Cpp.default.compilerPath": "/usr/bin/g++"
+    "C_Cpp.default.compilerPath": "/usr/bin/g++",
+    "files.watcherExclude": {
+        "**/target/**": true,
+        "**/.bloop/**": true,
+        "XiangShan/out/**": true
+    },
+    // XiangShan 是 mill 工程但不在工作区根目录，让 Metals 以它为项目根。
+    "metals.customProjectRoot": "XiangShan",
+    // 直接使用 mill 自带的 BSP（XiangShan/.bsp/mill-bsp.json），不经过 Bloop。
+    "metals.defaultBspToBuildTool": true
 }
