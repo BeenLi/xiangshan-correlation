@@ -3,7 +3,7 @@
 
 # 01-1 🆕 解耦前端：FTQ 与 FTB
 
-> 属于 [01 香山流水线微架构总览：RTL 与 gem5 对照](01-pipeline-overview.md)，读法约定和全流水对照图见总览。标 ✅ 的是直接从代码或配置读出的事实，标 ❓ 的是待核实，🆕 是课本（Computer Architecture A Quantitative Approach Ch3）没有的东西。
+> 属于 [01 香山流水线微架构总览：RTL 与 gem5 对照](01-0-pipeline-overview.md)，全流水对照图见总览，读法约定见 [00 两种写法](00-0-modeling-overview.md)。标 ✅ 的是直接从代码或配置读出的事实，标 ❓ 的是待核实，🆕 是课本（Computer Architecture A Quantitative Approach Ch3）没有的东西。
 
 ## 1. 解耦前端（decoupled frontend）与 FTQ
 
@@ -31,7 +31,7 @@
 2. **IFU 停下时预取跑得最远**：IFU 因 ICache 缺失等待时 BPU 不停，FTQ 越积越满，`pfPtr` 继续往前发预取，连续几次缺失从串行变成重叠，相当于取指侧的访存级并行。
 3. **所以 FTQ 深度决定预取提前量的上限**：两边的有效深度都是 64 个块（gem5 由 FSQ 限定，见上），这一项不构成差异。
 
-gem5 侧：[`fetch.cc`](../../GEM5-XS/src/cpu/o3/fetch.cc) 与 `cpu/pred/` 下没有 grep 到 FDIP 实现，[`fetch.md`](../../GEM5-XS/src/cpu/o3/fetch.md#L7) 写的是"为后续 FDIP 奠定基础"，是否建模待核实 ❓。若未建模，代码体积大的 SPEC 负载（gcc、perlbench）上 gem5 的前端停顿会偏多，CoreMark 影响小。另外，图中 `pfPtr` 在 `ifuPtr` 之前是正常情况；代码只断言 `pfPtr` 不越过 `bpuPtr`（[`NewFtq.scala:795`](../../XiangShan/src/main/scala/xiangshan/frontend/NewFtq.scala#L795)），两者的先后没有硬约束 ❓。图里省略了 `ifuWbPtr`（IFU 预译码写回）和 `robCommPtr`，它们都在 `commPtr` 与 `ifuPtr` 之间。
+gem5 侧没有 FDIP，L1I 也没有预取器 ✅（2026-10-24 核实，见 [01-3](01-3-ifu.md)）。代码体积大的 SPEC 负载（gcc、perlbench）上 gem5 的前端停顿会偏多，CoreMark 影响小。另外，图中 `pfPtr` 在 `ifuPtr` 之前是正常情况；代码只断言 `pfPtr` 不越过 `bpuPtr`（[`NewFtq.scala:795`](../../XiangShan/src/main/scala/xiangshan/frontend/NewFtq.scala#L795)），两者的先后没有硬约束 ❓。图里省略了 `ifuWbPtr`（IFU 预译码写回）和 `robCommPtr`，它们都在 `commPtr` 与 `ifuPtr` 之间。
 
 ## 2. FTB 而不是 BTB，预测块而不是单条分支
 

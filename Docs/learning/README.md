@@ -62,37 +62,46 @@ Top-down 分解（派发宽度 6）：RTL 前端多出约 108 万 slot，被 GEM
 
 ---
 
-## 2. 排期：三步走（2026-10-20 按你的反馈重排）
+## 2. 排期：四步走（2026-10-24 重排）
 
-你的背景：乱序核原理和 LSU 很熟，前端不熟；课本之外，香山新加的特性和**流水级划分里的时序考量**是薄弱点。所以顺序改成"先把机器本身看懂，再校准看它的尺子，最后才用尺子量差距"。RTL 仿真 6 小时一个点的约束不变，前两步都不需要新仿真。
+你的背景：乱序核原理和 LSU 很熟，前端不熟；课本之外，香山新加的特性和**流水级划分里的时序考量**是薄弱点。顺序是"先把机器本身看懂（计算，再存储），再校准看它的尺子（top-down），最后才用尺子量差距"。每一项都**先读 RTL，再对照 gem5**。RTL 仿真 6 小时一个点的约束不变，前三步都不需要新仿真。
 
-### 第一步：香山流水线微架构，RTL 与 gem5 对照（前端为重）
+### 第一步：香山流水线微架构，RTL 与 gem5 对照
 
-目标：画出昆明湖 V2 从 BPU 到 commit 的每一级，标出每级在 RTL 里是哪个模块、哪根 fire 信号，在 gem5 里是哪个 stage、哪个 delay 参数；课本没有的部分（解耦前端、FTQ、FTB、三级 BPU 覆盖、IBuffer 分 bank、RegCache、ROB 压缩、issue 的 og0/og1 两拍）单独标注。
+目标：画出昆明湖 V2 从 BPU 到 commit 的每一级，标出每级在 RTL 里是哪个模块、哪根 fire 信号，在 gem5 里是哪个 stage、哪个 delay 参数；课本没有的部分（解耦前端、FTQ、FTB、三级 BPU 覆盖、IBuffer 分 bank、RegCache、ROB 压缩、issue 的 og0/og1 两拍）单独标注。前端和后端都精读一遍，不分轻重。
 
-- [x] 总览笔记：[01 香山流水线微架构总览 - RTL 与 gem5 对照](01-pipeline-overview.md)。只放地图：昆明湖整体架构图、前端和后端的级划分对照图、待核实清单，细节分篇的链接也在总览里。
+- [x] 总览笔记：[01 香山流水线微架构总览 - RTL 与 gem5 对照](01-0-pipeline-overview.md)。只放地图：昆明湖整体架构图、前端和后端的级划分对照图、待核实清单，细节分篇的链接也在总览里。
 - [x] 前端精读 1（2026-10-20，结论在 [01-2 三级预测流水与 override](01-2-bpu-override.md) 的"精读结论"）：BPU 三级的 override 机制。RTL 看 [`BPU.scala`](../../XiangShan/src/main/scala/xiangshan/frontend/BPU.scala#L704) 的 `s2_redirect`、`s3_redirect` 与 [`overrideBubble`](../../XiangShan/src/main/scala/xiangshan/frontend/BPU.scala#L1088)；gem5 看 [`pred/ftb/decoupled_bpred.cc`](../../GEM5-XS/src/cpu/pred/ftb/decoupled_bpred.cc#L798) 的空泡处理。问题：两边各自在哪一拍发现"后级推翻前级"，补几个空泡。
 - [x] 前端精读 2（2026-10-24，结论在 [01-1 解耦前端：FTQ 与 FTB](01-1-ftq-decoupled-frontend.md)）：FTQ 的四个指针（bpuPtr、ifuPtr、pfPtr、commPtr，另有 ifuWbPtr、robCommPtr）各自推进条件。gem5 的对应物是 FSQ（[`decoupled_bpred.cc`](../../GEM5-XS/src/cpu/pred/ftb/decoupled_bpred.cc#L1817)），不是同名的 [`fetch_target_queue.cc`](../../GEM5-XS/src/cpu/pred/ftb/fetch_target_queue.cc#L15)。问题：取指落后预测多少、谁反压谁。
-- [ ] 前端精读 3：IFU f0 到 f3 各拍做什么（f1 算 PC、f2 等 ICache 回数据加异常合并、f3 预译码加 MMIO 状态机），`f3_fire = toIbuffer.fire`。gem5 的 fetch 把这几拍压成 `fetchToDecodeDelay = 2`。这是第一个"级划分的时序考量"样本。
+- [x] 前端精读 3（2026-10-24，结论在 [01-3 取指](01-3-ifu.md) 的"精读结论"）：IFU f0 到 f3 各拍做什么（f1 算 PC、f2 等 ICache 回数据加异常合并、f3 预译码加 MMIO 状态机），`f3_fire = toIbuffer.fire`。gem5 的 fetch 把这几拍压成 `fetchToDecodeDelay = 2`。这是第一个"级划分的时序考量"样本。
 - [ ] 前端精读 4：ICache 与 ITLB。RTL 看 [`ICache.scala`](../../XiangShan/src/main/scala/xiangshan/frontend/icache/ICache.scala#L590) 的 mainPipe、missUnit、IPrefetch 和 [`Frontend.scala`](../../XiangShan/src/main/scala/xiangshan/frontend/Frontend.scala#L172) 的 ITLB；gem5 看 fetch 怎么发 L1I 请求、ITLB 缺失怎么处理。问题：命中、ICache 缺失、ITLB 缺失三种情况各要几拍，两边是否一致；gem5 有没有 FDIP。
-- [ ] 后端走读：decode（含 fusion）→ rename（CompressUnit、snapshot、move 消除）→ NewDispatch → IssueQueue（enq、select、og0 读寄存器、og1 旁路）→ exu → wb → Rob。只看每级的 valid-ready 和重定向恢复，不深挖 LSU（已有 LSU 核心概念 - 访存的一生与六大机制）。
-- [ ] 同步做仓库 `Docs/cmodel-interview` 的 04 流水线 stall/flush 与 08 事件队列，手感对应上面两种建模方式。
+- [ ] 后端精读 1：decode 与 rename。RTL 看 [`DecodeStage`](../../XiangShan/src/main/scala/xiangshan/backend/decode/DecodeStage.scala)、[`FusionDecoder`](../../XiangShan/src/main/scala/xiangshan/backend/decode/FusionDecoder.scala#L538)、[`Rename`](../../XiangShan/src/main/scala/xiangshan/backend/rename/Rename.scala#L40)（CompressUnit、snapshot、move 消除）；gem5 对照 `decode.cc`、`rename.cc`。问题：宏融合规则是否同一套，分支误预测时 RAT 怎么恢复（快照 vs `robWalkPolicy`）。
+- [ ] 后端精读 2：dispatch 与 issue。RTL 看 [`NewDispatch`](../../XiangShan/src/main/scala/xiangshan/backend/dispatch/NewDispatch.scala#L49)、[`IssueQueue`](../../XiangShan/src/main/scala/xiangshan/backend/issue/IssueQueue.scala#L82)（enq、select、唤醒）、DataPath 的 og0/og1 与 RegCache；gem5 对照 [`issue_queue.cc`](../../GEM5-XS/src/cpu/o3/issue_queue.cc)、`KunminghuScheduler`。问题：进 IQ 后最早哪一拍能被选中，唤醒和取消各差几拍。
+- [ ] 后端精读 3：执行、写回与提交。RTL 看 exu、WbArbiter、[`Rob`](../../XiangShan/src/main/scala/xiangshan/backend/rob/Rob.scala#L57)、[`RedirectGenerator`](../../XiangShan/src/main/scala/xiangshan/backend/ctrlblock/RedirectGenerator.scala)；gem5 对照 `iew.cc`、[`commit.cc`](../../GEM5-XS/src/cpu/o3/commit.cc#L669)。问题：误预测从执行到前端重新取指要几拍，ROB 压缩怎么算容量。
 
-### 第二步：Top-down 计数器的统计语义是否对齐
+### 第二步：存储层次，RTL 与 gem5 对照
 
-目标：先读 [Top-Down Method](https://doi.org/10.1109/ISPASS.2014.6844459)（ISPASS'14）抓住四条原则：分类点在 issue、以 slot 为粒度、bad speculation 是顶层闸门、只有兄弟节点可比。然后拿这四条逐一审两边的实现。
+目标：和第一步同样的读法，把 LSU 到 DRAM 这一段看懂，笔记放 [02 存储层次总览](02-0-memory-overview.md)。LSU 的概念已有 LSU 核心概念 - 访存的一生与六大机制，这里只写香山和 gem5 的实现差别。读代码不需要新仿真；CoreMark 78 号点的工作集全在 L1，数据对照要等 SPEC（需要 ISO），没有 ISO 之前用 gapbs 代替。
+
+- [ ] LSU：load/store 流水各级、LQ/SQ、违例检测与重放；gem5 对照 [`LdPipeStages = 4`](../../GEM5-XS/src/cpu/o3/BaseO3CPU.py#L171)、[`StPipeStages = 5`](../../GEM5-XS/src/cpu/o3/BaseO3CPU.py#L172)。
+- [ ] DCache 与 L2：RTL `cache/dcache/`、coupledL2（在 gem5 标签之后升级过两次）；gem5 对照 [`CacheConfig.py`](../../GEM5-XS/configs/common/CacheConfig.py#L308) 的 `do_fast_writeline`、`pipe_latency = 3`。
+- [ ] 预取：RTL `mem/prefetch/`；gem5 对照 [`PrefetcherConfig.py`](../../GEM5-XS/configs/common/PrefetcherConfig.py#L34)，以及 `kmh_align` 关掉的 temporal prefetch、store pf train。
+- [ ] TLB 与 PTW：RTL `cache/mmu/`（DTLB、L2TLB、PTW）；gem5 对照 `arch/riscv/` 的 TLB 与 pagetable walker。
+
+### 第三步：Top-down 计数器的统计语义是否对齐
+
+目标：先读 [Top-Down Method](https://doi.org/10.1109/ISPASS.2014.6844459)（ISPASS'14）抓住四条原则：分类点在 issue、以 slot 为粒度、bad speculation 是顶层闸门、只有兄弟节点可比。然后拿这四条逐一审两边的实现。 笔记放 [03 Top-down 计数器口径总览](03-0-topdown-overview.md)。
 
 - [ ] RTL：[`package.scala:948`](../../XiangShan/src/main/scala/xiangshan/package.scala#L948) 的 `TopDownCounters` 枚举全表，追每个 reason 在哪个模块、哪一拍打标，重点是 IFU 里"只由时钟驱动、不看 valid-ready"的 `topdown_stages` 传递方式。
 - [ ] gem5：`o3/` 里对应的 stall 分类（`IcacheStall`、`BpStall`、`FTQBubble`、`FetchFragStall`、`SquashStall` 等）在哪个 stage 计数，分类点是不是同一个"issue 点"。
 - [ ] 产出：两边 top-down 口径对照表（放仓库 `Docs/`），每行标"语义一致 / 名字同义义不同 / 一边没有"。`ITLBMissBubble` 92 万 slot 却 0 次 PTW 这件事，预期在这一步得到解释。
 
-### 第三步：78 号点 1.35% 的来源
+### 第四步：78 号点 1.35% 的来源
 
-有了第一步的流水线图和第二步的口径表，再回到 [`Docs/checkpoint.md` §5.5](../checkpoint.md#55-已验证的结果) 的分解：前端 RTL 多 108 万 slot、错误推测 gem5 多 36 万、后端 gem5 多 41 万。
+有了前三步的流水线图、存储层次和口径表，再回到 [`Docs/checkpoint.md` §5.5](../checkpoint.md#55-已验证的结果) 的分解：前端 RTL 多 108 万 slot、错误推测 gem5 多 36 万、后端 gem5 多 41 万。
 
 - [ ] 用 gem5 做单变量实验（25 分钟一轮）验证第一步发现的级划分差异，看前端 slot 能否向 RTL 靠拢。
 - [ ] RTL 侧后台跑完剩余 10 个 CoreMark 检查点（先查负载、绑 NUMA），把"一个点"变成"加权整体"。
-- [ ] 存储层次留到 SPEC（需要 ISO）；没有 ISO 之前用 gapbs 代替。
 
 ---
 
@@ -106,6 +115,10 @@ CPU 这一站结束时，希望手里有三样东西：一张"六大思想 × �
 
 | 内容 | 位置 |
 | --- | --- |
+| 学习笔记：01 流水线 | [01 香山流水线微架构总览](01-0-pipeline-overview.md)（进行中） |
+| 学习笔记：02 存储层次 | [02 存储层次总览](02-0-memory-overview.md)（框架） |
+| 学习笔记：03 Top-down 口径 | [03 Top-down 计数器口径总览](03-0-topdown-overview.md)（框架） |
+| 学习笔记：00 两种写法 | [00 gem5 的建模手法与 RTL 的实现写法](00-0-modeling-overview.md)（框架） |
 | 工作区总览、锁定版本、使用方法 | 仓库 [`README.md`](../../README.md) |
 | difftest 调用约定、REF 为什么要被告知 | 仓库 [`Docs/difftest.md`](../difftest.md) |
 | 检查点生成、恢复、78 号点的全部数据 | 仓库 [`Docs/checkpoint.md`](../checkpoint.md) |

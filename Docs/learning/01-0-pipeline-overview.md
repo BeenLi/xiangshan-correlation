@@ -5,21 +5,7 @@
 
 > 学习计划第一步的起点，见 [xiangshan-correlation 学习计划 - 六大思想视角](README.md)。本篇是 2026-10-20 只读勘察本仓库源码得到的"地图"，不是精读结论：标 ✅ 的是直接从代码或配置读出的事实，标 ❓ 的是待核实。目的是让后面每次精读都有坐标。
 >
-> 读法约定：RTL 和 gem5 描述的是同一条流水线，但写法不同。
->
-> - **RTL 写的是实现**：每一拍都靠一个真实的寄存器来实现。读 RTL 要弄清"哪根信号在第几拍有效，是哪个寄存器把它从上一拍传过来的"。
-> - **gem5 写的是行为和延迟**：只说每一级做什么、相邻两级之间隔几拍，不建模寄存器。两级之间用 `TimeBuffer` 连接：上游写 `getWire(0)`（[`decode.cc:207`](../../GEM5-XS/src/cpu/o3/decode.cc#L207)），下游读 `getWire(-delay)`（[`decode.cc:216`](../../GEM5-XS/src/cpu/o3/decode.cc#L216) 的 `fetchQueue->getWire(-fetchToDecodeDelay)`），每拍结束时统一 `advance()`（[`cpu.cc:586`](../../GEM5-XS/src/cpu/o3/cpu.cc#L586)）✅。所以 `delay = N` 就相当于 RTL 里两级之间隔着 N 个寄存器。
->
-> 对照着读时分两步：
->
-> 1. **先在 RTL 里数寄存器。** RTL 里的"一级"有两种来源，和拍数的关系不一样：
->    - **寄存器边界**：模块内部的流水寄存器，例如 IFU 的 f0→f3、BPU 的 s0→s3。每过一个这样的边界就要花一拍。
->    - **模块边界**：两个 Scala 模块之间的接口。端口本身只是连线，要不要花一拍，取决于接口处有没有寄存器。例如 Rename 读 RAT 的请求在 Decode 级就已经发出，跨了模块却不多花一拍。
->
->    所以，模块边界不一定是拍数的边界，一个模块内部也可能有好几拍。
-> 2. **再到 gem5 里找对应的延迟参数。** RTL 模块内部的那几拍，gem5 一般不单独分级，而是合并成一个参数来表示，例如 BPU 各级对应每个预测器的 `numDelay`。IFU 的 f0→f3 加上 IBuffer 这一段，在 gem5 里只有 `fetchToDecodeDelay = 2` 加一个 fetchQueue，两边总拍数是否相等还没核实 ❓。RTL 两个模块之间的边界，在 gem5 里对应一个 stage 加一个 TimeBuffer 位置，例如 `decodeToRenameDelay = 1`。
->
-> 比较时，看的是一段路径的总拍数，不是级名能不能一一对上。总拍数对不上的地方就是 correlation 要重点检查的地方。例如 RTL 有独立的 [`NewDispatch`](../../XiangShan/src/main/scala/xiangshan/backend/dispatch/NewDispatch.scala#L49) 模块，而 gem5 的 [`enableDispatchStage`](../../GEM5-XS/src/cpu/o3/BaseO3CPU.py#L145) 默认为 False，[`kmhv2.py`](../../GEM5-XS/configs/example/kmhv2.py) 也没有打开它（见下文）。
+> 读法约定（RTL 写的是实现、gem5 写的是行为和延迟，比较时看一段路径的总拍数）见 [00 两种写法](00-0-modeling-overview.md) §0。
 >
 > 课本（Computer Architecture A Quantitative Approach Ch3）没有的东西用 🆕 标出。
 
@@ -39,10 +25,10 @@
 
 从前端图读出的五点：
 
-- **ICache 与 ITLB 的容量两边一致** ✅。RTL ICache 是 [256 组 × 4 路 × 64 B](../../XiangShan/src/main/scala/xiangshan/frontend/icache/ICache.scala#L53) = 64 KB，ITLB [48 项](../../XiangShan/src/main/scala/xiangshan/Parameters.scala#L270)；gem5 L1I [64 kB、4 路](../../GEM5-XS/configs/common/Options.py#L157)，TLB [48 项](../../GEM5-XS/src/arch/riscv/RiscvTLB.py#L70)，检查点模式下走时序 MMU，不是功能 TLB（[`xiangshan.py:256`](../../GEM5-XS/configs/common/xiangshan.py#L256)）。差别在访问方式：RTL 一次取两行、有 FTQ 驱动的预取，gem5 是 classic cache，FDIP 是否建模待核实（清单第 5 条）。
+- **ICache 与 ITLB 的容量两边一致** ✅。RTL ICache 是 [256 组 × 4 路 × 64 B](../../XiangShan/src/main/scala/xiangshan/frontend/icache/ICache.scala#L53) = 64 KB，ITLB [48 项](../../XiangShan/src/main/scala/xiangshan/Parameters.scala#L270)；gem5 L1I [64 kB、4 路](../../GEM5-XS/configs/common/Options.py#L157)，TLB [48 项](../../GEM5-XS/src/arch/riscv/RiscvTLB.py#L70)，检查点模式下走时序 MMU，不是功能 TLB（[`xiangshan.py:256`](../../GEM5-XS/configs/common/xiangshan.py#L256)）。差别在访问方式：RTL 跨行时才取两行，ITLB 和 meta 由 FTQ 驱动的预取流水提前查；gem5 每次都取两行，没有 FDIP，L1I 也没有预取器 ✅，见 [01-3](01-3-ifu.md)。
 - **预测级的拍数在常见情形下相等，但建模方式不同** ✅。RTL 的 BPU 是 s0→s3 真流水：uFTB 的结果在 s1 就写进 FTQ，后级推翻时再回头改 FTQ、冲掉 IFU。gem5 在同一个 tick 里把三级都算完，只把最终结果交给 FTQ，差的拍数用 `numOverrideBubbles` 停几拍来补。有两种边角情形空泡数不等，其中一种让 gem5 前端更快，见 [01-2](01-2-bpu-override.md)。
 - **队列的有效深度两边都是 64** ✅。RTL FTQ 对应 gem5 FSQ，gem5 FTQ 的 128 在 kmhv2 下用不满，见 [01-1](01-1-ftq-decoupled-frontend.md)。
-- **取指到译码的总拍数还没对上，是前端最大的嫌疑** ❓。RTL 是 IFU f0→f3 四级寄存器加 IBuffer，IBuffer 为空时可以直通，拍数随状态变化。gem5 是固定的 `fetchToDecodeDelay = 2` 加 fetchQueue，见 [01-3](01-3-ifu.md)。
+- **ICache 命中时，从发取指请求到进 Decode，RTL 4 拍、gem5 3 拍** ✅。差的 1 拍全在 ICache 命中延迟（RTL s0 读 SRAM、s2 出数据；gem5 tag、data 并行 1 拍）；拿到数据之后两边都是 2 拍。这 1 拍只在重定向后重新取指时显现，按 78 号点的误预测次数估算最多约 7 万 slot，只占前端 slot 差的 6% 左右，不是主因，见 [01-3](01-3-ifu.md)。
 - **前端内部的反馈线不同**。RTL 有两条：BPU 的 s2/s3 推翻前级时冲掉 IFU 已经发出的取指（`flushFromBpu`）；IFU 在 f3 预译码时发现预测错误，写回 FTQ（`wb_redirect`）。gem5 没有第一条，因为它的 FTQ 收不到错误的预测项，IFU 不会白取。第二种纠错在 gem5 里由 decode 发 squash 回 BPU。所以 RTL 多付一次 IFU 作废的代价；预译码纠错从 f3 发出和从 decode 发出，到重新取指相差几拍，还没核实 ❓。
 
 **后端**（译码到提交）：
@@ -97,7 +83,7 @@ EXU → WbArbiter → ROB (160 项, CommitWidth 8)       execute → writeback �
 | --- | --- | --- |
 | [01-1 解耦前端：FTQ 与 FTB](01-1-ftq-decoupled-frontend.md) | FTQ 的四个指针、FDIP 指令预取、gem5 的 FSQ 与 FTQ；FTB 为什么按 PC 索引、表项结构与目标拼接、预测块怎么划分 | RTL FTQ 对应 gem5 FSQ，两边都是 64 ✅；FTB 目标只存低位，高位借块起始 PC ✅ |
 | [01-2 三级预测流水与 override](01-2-bpu-override.md) | FTB 在 s0–s2 的三拍、预测器组合顺序、两边 override 的建模、预测器表项对照 | 常见情形空泡数相等，两种边角情形不等 ✅ |
-| [01-3 IFU 的四拍](01-3-ifu.md) | f0–f3 各拍做什么、gem5 的 `fetchToDecodeDelay`、top-down 按拍打标 | ICache 命中路径总拍数待核实 ❓ |
+| [01-3 取指](01-3-ifu.md) | FTQ 同拍发两路、IFU 四级、ICache 主流水三级、IBuffer 旁路；gem5 的 fetch 与 L1I；缺失与预译码纠错 | 命中时 RTL 4 拍、gem5 3 拍，差在 ICache；gem5 没有 FDIP ✅ |
 | [01-4 后端](01-4-backend.md) | 宏融合、ROB 压缩、重命名快照、move 消除、RegCache、og0/og1 | 走读级，待精读 |
 
 ---
@@ -105,11 +91,11 @@ EXU → WbArbiter → ROB (160 项, CommitWidth 8)       execute → writeback �
 ## 2. 待核实清单（按对 78 号点前端差距的嫌疑排序，2026-10-24 重排）
 
 1. ~~s2/s3 override 的空泡数两边是否等价~~ 已读完，见 [01-2](01-2-bpu-override.md) 的"精读结论"：常见情形相等，两种边角情形不等，且 RTL 多一份 IFU 作废。下一步用 perf 计数器验证第二种。
-2. ICache 命中路径从发请求到进 IBuffer 的总拍数。注意 IBuffer 为空时的 bypass 会让这段拍数随状态变化，gem5 的 `fetchToDecodeDelay = 2` 是固定值。
-3. 预译码纠错的拍数：RTL 在 IFU f3 发现并写回 FTQ（`wb_redirect`），gem5 由 decode 发 squash；两边从发现错误到重新取指各隔几拍。
+2. ~~ICache 命中路径从发请求到进 Decode 的总拍数~~ 已读完，见 [01-3](01-3-ifu.md)：RTL 4 拍、gem5 3 拍，差在 ICache 命中延迟；估算只解释前端 slot 差的 6% 左右。
+3. 预译码纠错的拍数：RTL 在 f3 下一拍（wb）检出，再过两拍 BPU 才用新 PC；gem5 在 decode 检出，下一拍重定向 BPU。到正确路径进 Decode，推算 RTL 约 8 拍、gem5 约 7 拍加 override 空泡，BPU 之后的部分还没逐行核对，见 [01-3](01-3-ifu.md)。
 4. TAGE 4096 对 2048 是不是 bank 数的差。
-5. gem5 是否建模了 FTQ 驱动的指令预取（FDIP），见 [01-1](01-1-ftq-decoupled-frontend.md)。若未建模，ICache 缺失多的负载上 gem5 前端停顿偏多；CoreMark 代码小，影响应不大。
-6. `ITLBMissBubble` 按拍打标的确切条件（第二步）。
+5. ~~gem5 是否建模了 FTQ 驱动的指令预取（FDIP）~~ 已核实：没有，L1I 也没有预取器，见 [01-3](01-3-ifu.md)。ICache 缺失多的负载上 gem5 前端停顿会偏多；CoreMark 代码小，影响应不大。
+6. `ITLBMissBubble` 按拍打标的确切条件（第三步）。线索：RTL 的 `topdownItlbMiss` 条件是"WayLookup 没准备好"，预取没跑在前面时也成立，不一定真有 ITLB 缺失，见 [01-3](01-3-ifu.md)。
 7. 指令进 IQ 后最早在哪一拍能被选中，见 §0 后端图：RTL 是 NewDispatch 当拍写进 IQ 表项，gem5 是派发在 IEW 里完成后插入 issue_queue。两边差一拍就会拉长所有相关指令的唤醒链，是后端 slot gem5 多出 41 万的候选之一。
 8. gem5 宏融合规则是否与 RTL 同一套；regCache 容量；重命名快照对应 `robWalkPolicy`。
 9. 向量物理寄存器数不一致（128/22 对 192/32），SPEC 向量化负载前要对齐。

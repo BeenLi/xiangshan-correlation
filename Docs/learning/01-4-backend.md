@@ -3,7 +3,7 @@
 
 # 01-4 后端：课本之外的五件事（走读级，待精读）
 
-> 属于 [01 香山流水线微架构总览：RTL 与 gem5 对照](01-pipeline-overview.md)，读法约定和全流水对照图见总览。标 ✅ 的是直接从代码或配置读出的事实，标 ❓ 的是待核实，🆕 是课本（Computer Architecture A Quantitative Approach Ch3）没有的东西。
+> 属于 [01 香山流水线微架构总览：RTL 与 gem5 对照](01-0-pipeline-overview.md)，全流水对照图见总览，读法约定见 [00 两种写法](00-0-modeling-overview.md)。标 ✅ 的是直接从代码或配置读出的事实，标 ❓ 的是待核实，🆕 是课本（Computer Architecture A Quantitative Approach Ch3）没有的东西。
 
 | 🆕 特性 | RTL 位置 | gem5 对应 | 一句话 |
 | --- | --- | --- | --- |

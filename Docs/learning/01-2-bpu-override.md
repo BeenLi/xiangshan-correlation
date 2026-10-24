@@ -3,7 +3,7 @@
 
 # 01-2 🆕 三级预测流水与 override
 
-> 属于 [01 香山流水线微架构总览：RTL 与 gem5 对照](01-pipeline-overview.md)，读法约定和全流水对照图见总览。标 ✅ 的是直接从代码或配置读出的事实，标 ❓ 的是待核实，🆕 是课本（Computer Architecture A Quantitative Approach Ch3）没有的东西。
+> 属于 [01 香山流水线微架构总览：RTL 与 gem5 对照](01-0-pipeline-overview.md)，全流水对照图见总览，读法约定见 [00 两种写法](00-0-modeling-overview.md)。标 ✅ 的是直接从代码或配置读出的事实，标 ❓ 的是待核实，🆕 是课本（Computer Architecture A Quantitative Approach Ch3）没有的东西。
 
 官方的预测流水图（BP1 / BP2 / BP3 对应本文的 s1 / s2 / s3）。看三件事：uBTB 在 BP1 就出目标；FTB、TAGE、RAS 的结果在 BP2 出；SC、ITTAGE 最慢，BP3 才出；每一级的 target calc 都有一根线绕回最左边的 NPC Mux，这就是 override：
 
@@ -68,7 +68,7 @@ RTL 的组合顺序在 [`Parameters.scala:124`](../../XiangShan/src/main/scala/x
 
 第二种不一致值得优先查：它的方向是让 gem5 前端更快，和 78 号点"RTL 前端 slot 多 108 万、gem5 IPC 高 1.35%"的方向一致。CoreMark 这种小循环体负载，uFTB 和 FTB 对"块在哪结束"的分歧（例如 uFTB 没命中、给了一个默认的 fall-through 长度）可能频繁发生。验证方法：RTL 侧看 `s2_redirect_because_branch_num_diff` 和 `s2_redirect_when_not_taken` 这两个 perf 计数器，gem5 侧看 `overrideCount` 和按原因分的 `overrideFallThruMismatch`、`overrideEndMismatch`；如果 RTL 的不 taken 推翻数远大于 gem5 的 end/fallThru 推翻数，就坐实了。
 
-**第三个差别不在空泡数，在谁被冲掉。** RTL 的 s1 结果已经进了 FTQ，IFU 跟得紧时可能已经按它发了 ICache 请求，推翻时 IFU 的 f0/f1 一起作废；gem5 的 FTQ 只见最终结果，IFU 永远不会白取。IPC 接近 3 的 CoreMark 上 FTQ 大概率是浅的，IFU 紧跟 BPU，这部分损失 RTL 会记到 `OverrideBubble` 之外的取指空泡里。这一条和第二步的 top-down 口径对照直接相关。
+**第三个差别不在空泡数，在谁被冲掉。** RTL 的 s1 结果已经进了 FTQ，IFU 跟得紧时可能已经按它发了 ICache 请求，推翻时 IFU 的 f0/f1 一起作废；gem5 的 FTQ 只见最终结果，IFU 永远不会白取。IPC 接近 3 的 CoreMark 上 FTQ 大概率是浅的，IFU 紧跟 BPU，这部分损失 RTL 会记到 `OverrideBubble` 之外的取指空泡里。这一条和第三步的 top-down 口径对照直接相关。
 
 **对课本的补充：** 课本讲 override 预测器（H&P 讲 tournament、TAGE 时只给一拍模型），没有讲"先把快的结果交出去再撤回"的流水线实现。RTL 这套 `previous_s1/s2_pred` 寄存加四项比较、`npcGen` 优先级仲裁、FTQ 指针回拉，是设计里真正的时序考量；gem5 把它折叠成一个整数 `numOverrideBubbles`，丢掉的正是"撤回"这半边。
 
@@ -81,4 +81,4 @@ RTL 的组合顺序在 [`Parameters.scala:124`](../../XiangShan/src/main/scala/x
 | SC | 4 表，512 行，hist 0/4/10/16，6 位计数器 | `tage.enableSC` 默认开 |
 | RAS | RasSize 16，RasSpecSize 32（[`Parameters.scala:102`](../../XiangShan/src/main/scala/xiangshan/Parameters.scala#L102)） | FTBRAS 32 项（[`BranchPredictor.py:886`](../../GEM5-XS/src/cpu/pred/BranchPredictor.py#L886)），uRAS 4 项（[`BranchPredictor.py:896`](../../GEM5-XS/src/cpu/pred/BranchPredictor.py#L896)） |
 
-❓ TAGE 的 4096 对 2048：RTL 的 `TageBanks = numBr = 2`，可能是每个 bank 2048 行、共 4096；需要看 [`Tage.scala:162`](../../XiangShan/src/main/scala/xiangshan/frontend/Tage.scala#L162) 的 bank 索引函数确认是"2 bank × 2048"还是真的差一倍。这类"同名不同义"正是第二步要练的眼力。
+❓ TAGE 的 4096 对 2048：RTL 的 `TageBanks = numBr = 2`，可能是每个 bank 2048 行、共 4096；需要看 [`Tage.scala:162`](../../XiangShan/src/main/scala/xiangshan/frontend/Tage.scala#L162) 的 bank 索引函数确认是"2 bank × 2048"还是真的差一倍。这类"同名不同义"正是第三步要练的眼力。

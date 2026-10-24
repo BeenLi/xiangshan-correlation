@@ -1,0 +1,47 @@
+title: "ICache 命中时从发取指请求到进 Decode：KMH-V2 RTL（上）与 XS-GEM5（下）"
+# RTL：FTQ 同拍向 IFU 与 ICache 发请求（NewFtq.scala:901、906）；ICacheMainPipe s0 读 data SRAM（ICacheMainPipe.scala:217-227），
+# s2 回数据（:559），IFU f2 收（IFU.scala:362），f3 进 IBuffer（IFU.scala:560），IBuffer 旁路写 outputEntries 寄存器（IBuffer.scala:193、215、284-289），
+# outputEntries 直连 Decode（CtrlBlock.scala:500）。
+# gem5：fetch() 末尾 sendNextCacheRequest 发两行请求，ITLB 命中 0 拍（fetch.cc:2286、941；tlb.cc:2283），L1I tag/data 并行 1 拍（Caches.py:65-67，base.cc:1688），
+# 响应事件先于 CPU tick（base.cc:89），同一 tick 译出指令进 fetchQueue 并写 toDecode wire 0（fetch.cc:1949、1424、413），decode 读 getWire(-2)（decode.cc:216）。
+stages:
+  - {id: C0, sub: "第 0 拍：发请求"}
+  - {id: C1, sub: "第 1 拍"}
+  - {id: C2, sub: "第 2 拍"}
+  - {id: C3, sub: "第 3 拍"}
+  - {id: C4, sub: "第 4 拍"}
+lanes:
+  - {id: rtl, name: "RTL"}
+  - {id: g5, name: "gem5"}
+nodes:
+  - {id: r_ftq, type: fifo, label: "FTQ\n同拍发两路", stage: C0, lane: rtl}
+  - {id: r_s0, type: block, label: "ICache s0\n读 data SRAM", stage: C0, lane: rtl, row: 1}
+  - {id: r_f0, type: block, label: "IFU f0", stage: C0, lane: rtl, col: 1}
+  - {id: r_s1, type: block, label: "ICache s1\nPMP · ECC", stage: C1, lane: rtl, row: 1}
+  - {id: r_f1, type: block, label: "IFU f1\n算 PC", stage: C1, lane: rtl}
+  - {id: r_s2, type: block, label: "ICache s2\n回数据", stage: C2, lane: rtl, row: 1, hl: true}
+  - {id: r_f2, type: block, label: "IFU f2\n收数据 · 预译码", stage: C2, lane: rtl}
+  - {id: r_f3, type: block, label: "IFU f3\nRVC 展开 · 检查", stage: C3, lane: rtl}
+  - {id: r_ob, type: reg, label: "IBuffer 输出寄存器", between: [C3, C4], lane: rtl}
+  - {id: r_dec, type: block, label: "Decode", stage: C4, lane: rtl}
+  - {id: g_fet, type: block, label: "fetch()\nITLB 命中 0 拍\n发两行请求", stage: C0, lane: g5}
+  - {id: g_l1, type: reg, label: "L1I 1 拍", between: [C0, C1], lane: g5}
+  - {id: g_resp, type: block, label: "响应先于 tick\n译出 → fetchQueue\n写 toDecode", stage: C1, lane: g5, hl: true}
+  - {id: g_tb, type: block, label: "TimeBuffer\nfetchToDecodeDelay = 2", stage: C2, lane: g5}
+  - {id: g_dec, type: block, label: "decode\ngetWire(-2)", stage: C3, lane: g5}
+edges:
+  - "r_ftq -> r_f0 : toIfu"
+  - "r_ftq -> r_s0 : toICache"
+  - "r_f0 -> r_f1"
+  - "r_s0 -> r_s1"
+  - "r_f1 -> r_f2"
+  - "r_s1 -> r_s2"
+  - "r_s2 -> r_f2 : 命中数据 | hl"
+  - "r_f2 -> r_f3"
+  - "r_f3 -> r_ob : 旁路"
+  - "r_ob -> r_dec"
+  - "g_fet -> g_l1"
+  - "g_l1 -> g_resp : 命中数据 | hl"
+  - "g_resp -> g_tb"
+  - "g_tb -> g_dec"
+legend: {reg: 寄存器 / 延迟, hl: 两边差 1 拍的地方, data: 数据}

@@ -51,3 +51,29 @@ XiangShan 昆明湖 V2 RTL 与 XS-GEM5 的 correlation 工作区。版本、目�
 检查点都由 workload-builder 打包成 Linux 镜像后生成，所以名字里不再写 `linux`。
 
 已有的 `checkpoints/coremark-linux-20m` 是在这条规则确立之前生成的，属于例外。它的实际参数是 GCC 15.1.0、-O2、`rv64gcb`、20M 间隔，按新规则应叫 `coremark-gcc15-o2-20m`。
+
+## 学习文档（Docs/learning）规则
+
+`Docs/learning/README.md` 是学习计划和索引。笔记按类别编号，每类一篇总览加若干分篇：
+
+| 编号 | 类别 | 总览 | 状态 |
+|---|---|---|---|
+| 00 | 两种写法：gem5 的建模手法（TimeBuffer、tick 与事件、squash、补空泡、配置生效链）与对应的 RTL 写法 | `00-0-modeling-overview.md` | 框架 |
+| 01 | 流水线（学习计划第一步） | `01-0-pipeline-overview.md` | 进行中 |
+| 02 | 存储层次：LSU、DCache、L2、预取、TLB/PTW（第二步） | `02-0-memory-overview.md` | 框架 |
+| 03 | Top-down 计数器口径（第三步，有了计算和存储之后） | `03-0-topdown-overview.md` | 框架 |
+
+- 总览命名 `NN-0-<主题>-overview.md`，只放地图（架构图、对照图、待核实清单）和分篇表，不写细节。
+- 分篇命名 `NN-M-<主题>.md`，每一项精读一篇，例如 `01-2-bpu-override.md`。内容紧密相关的可以合进同一篇（如 `01-1` 同时讲 FTQ 与 FTB）。改编号或合并时，同步改总览、README 和其他分篇里的链接。
+- 新开一类时先搭框架：总览只写标题和"（待写）"，并在 README 的索引表和本表登记。
+
+每一项都先读 RTL，再对照 gem5；笔记里也按这个顺序写：先讲 RTL 怎么实现，再讲 gem5 怎么建模，最后是两边对照和结论。
+
+写精读笔记时仿照已有分篇（如 `01-2-bpu-override.md`）：
+- 开头两段引用块：第一段说明是仓库内学习文档、图在 `figs/`、`文件:行号` 可点击；第二段写"属于 [NN 总览](NN-0-<主题>-overview.md)"，并说明 ✅（从代码或配置读出）、❓（待核实）、🆕（课本没有）三个标记。
+- 引用代码一律写成相对本文件的链接并带行号，例如 [`IFU.scala:245`](../../XiangShan/src/main/scala/xiangshan/frontend/IFU.scala#L245)。
+- RTL 和 gem5 两边对照着写，结论落到"第几拍、哪根信号、哪个 delay 参数"；精读结论单独成节，标题写成"精读结论（日期）：一句话结论"。
+- **每篇至少一张辅助理解的图**，二选一：
+  - 官方或互联网上现成的架构图：下载到 `figs/official/`，在 `figs/README.md` 写明来源链接。
+  - 没有现成的图时，用本地的 verilog-diagram skill（`arch2drawio.py`）从代码画：`.yaml`、`.drawio`、`.png` 三件放 `figs/drawn/`，yaml 头部注释写清依据的代码行；渲染后用 drawio-skill 的 `validate.py` 检查，error 必须为 0，并目视检查 PNG。结构图画不出来的（位域、指针位置这类）可以手写 SVG，在 `figs/README.md` 注明。
+- 精读完成后：`Docs/learning/README.md` 里对应的待办打勾，括号里写日期和笔记链接；总览的分篇表和待核实清单同步更新（❓ 改 ✅ 并写一行结论）。
