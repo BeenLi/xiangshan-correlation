@@ -58,7 +58,7 @@ XiangShan 昆明湖 V2 RTL 与 XS-GEM5 的 correlation 工作区。版本、目�
 
 | 编号 | 类别 | 总览 | 状态 |
 |---|---|---|---|
-| 00 | 两种写法：gem5 的建模手法（TimeBuffer、tick 与事件、squash、补空泡、配置生效链）与对应的 RTL 写法 | `00-0-modeling-overview.md` | 框架 |
+| 00 | 两种写法（第零步）：RTL 与 gem5 的建模方法学，分 00-1 隔几拍、00-2 一拍内顺序、00-3 冲刷与推翻、00-4 参数来源 | `00-0-modeling-overview.md` | 框架 |
 | 01 | 流水线（学习计划第一步） | `01-0-pipeline-overview.md` | 进行中 |
 | 02 | 存储层次：LSU、DCache、L2、预取、TLB/PTW（第二步） | `02-0-memory-overview.md` | 框架 |
 | 03 | Top-down 计数器口径（第三步，有了计算和存储之后） | `03-0-topdown-overview.md` | 框架 |

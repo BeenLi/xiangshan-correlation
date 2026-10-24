@@ -31,30 +31,20 @@ RTL 和 gem5 描述的是同一条流水线，但写法不同。
 
 | 主题 | RTL 写法 | gem5 手法 |
 | --- | --- | --- |
-| 两级之间隔几拍 | 级间寄存器（RegNext、RegEnable、PipelineConnect） | TimeBuffer：上游写 `getWire(0)`，下游读 `getWire(-delay)` |
-| 一拍之内谁先谁后 | 组合逻辑与时钟沿；valid-ready 握手、同拍反向的 ready 链 | tick 与事件队列：各级在一个 tick 里的执行顺序、事件优先级 |
-| 冲刷怎么传播 | flush / redirect 信号与 `robIdx.needFlush` | squash 经 TimeBuffer 往前级传 |
-| 推翻前级的预测 | 先写后改：s1 结果先进 FTQ，后级推翻时回拉指针、冲掉 IFU | 同一拍全部算完，再用 `numOverrideBubbles` 补空泡 |
-| 参数从哪来 | `Parameters.scala` 与 Config 层层覆盖 | `kmhv2.py` → `xiangshan.py` → `BaseO3CPU.py` 默认值 |
+| 两级之间隔几拍 | 级间寄存器（RegNext、RegEnable、PipelineConnect），SRAM 本身也算一级 | TimeBuffer：上游写 `getWire(0)`，下游读 `getWire(-delay)`，每拍末 `advance()` |
+| 一拍之内谁先谁后 | 组合逻辑与时钟沿；valid-ready 握手、同拍反向的 ready 链、同拍旁路 | `CPU::tick` 里各级的调用顺序、事件优先级 |
+| 冲刷与推翻 | flush / redirect 信号与 `robIdx.needFlush`；BPU 先写后改：s1 结果先进 FTQ，后级推翻时回拉指针、冲掉 IFU | squash 经 TimeBuffer 往前级传；BPU 同一拍全部算完，再用 `numOverrideBubbles` 补空泡 |
+| 参数从哪来 | `Parameters.scala` 默认值与 `Configs.scala` 的 Config 叠加 | `kmhv2.py` → `xiangshan.py` → `BaseO3CPU.py` 默认值 |
 
 ---
 
-## 2. 两级之间隔几拍
+## 2. 细节分篇
 
-（待写）
+每篇都拿本仓库里的真实代码当例子，先讲 RTL，再讲 gem5。各篇要读的代码见 [学习计划第零步](README.md)。
 
-## 3. 一拍之内谁先谁后
-
-（待写）
-
-## 4. 冲刷怎么传播
-
-（待写）
-
-## 5. 推翻前级的预测
-
-（待写）
-
-## 6. 参数从哪来
-
-（待写）
+| 篇 | 内容 | 主要结论 |
+| --- | --- | --- |
+| 00-1 两级之间隔几拍（待写） | 级间寄存器对 TimeBuffer | |
+| 00-2 一拍之内谁先谁后（待写） | 组合逻辑与握手对 tick 顺序与事件优先级 | |
+| 00-3 冲刷与推翻（待写） | flush / redirect 与先写后改对 squash 与补空泡 | |
+| 00-4 参数从哪来（待写） | Config 叠加对 Python 配置链 | |

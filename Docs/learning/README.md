@@ -62,9 +62,18 @@ Top-down 分解（派发宽度 6）：RTL 前端多出约 108 万 slot，被 GEM
 
 ---
 
-## 2. 排期：四步走（2026-10-24 重排）
+## 2. 排期：第零步到第四步（2026-10-24 重排）
 
-你的背景：乱序核原理和 LSU 很熟，前端不熟；课本之外，香山新加的特性和**流水级划分里的时序考量**是薄弱点。顺序是"先把机器本身看懂（计算，再存储），再校准看它的尺子（top-down），最后才用尺子量差距"。每一项都**先读 RTL，再对照 gem5**。RTL 仿真 6 小时一个点的约束不变，前三步都不需要新仿真。
+你的背景：乱序核原理和 LSU 很熟，前端不熟；课本之外，香山新加的特性和**流水级划分里的时序考量**是薄弱点。顺序是"先弄清两种写法，再把机器本身看懂（计算，再存储），再校准看它的尺子（top-down），最后才用尺子量差距"。每一项都**先读 RTL，再对照 gem5**。RTL 仿真 6 小时一个点的约束不变，前三步都不需要新仿真。
+
+### 第零步：RTL 与 gem5 建模方法学比较
+
+目标：先弄清两边"怎么写"，后面读具体部件时不用每次重新摸索。分四个子部分，每部分写一篇笔记（[00 两种写法](00-0-modeling-overview.md) 下的 00-1 到 00-4），都拿本仓库里的真实代码当例子讲：先讲 RTL 怎么实现，再讲 gem5 怎么建模。
+
+- [ ] 00-1 两级之间隔几拍。RTL：IFU 的级间寄存器 [`RegEnable(f0_ftq_req, f0_fire)`](../../XiangShan/src/main/scala/xiangshan/frontend/IFU.scala#L292)、decode→rename 的 [`PipelineConnect`](../../XiangShan/src/main/scala/xiangshan/backend/CtrlBlock.scala#L578)、FTB 把 SRAM 当作一级寄存器（[`FTB.scala:673`](../../XiangShan/src/main/scala/xiangshan/frontend/FTB.scala#L673)）。gem5：TimeBuffer 上游 [`getWire(0)`](../../GEM5-XS/src/cpu/o3/fetch.cc#L413)、下游 [`getWire(-fetchToDecodeDelay)`](../../GEM5-XS/src/cpu/o3/decode.cc#L216)、[`advance()`](../../GEM5-XS/src/cpu/o3/cpu.cc#L586)，以及发射到执行的 [`inflightIssues`](../../GEM5-XS/src/cpu/o3/issue_queue.cc#L194)。问题：`delay = N` 和 N 个寄存器在什么情况下不等价。
+- [ ] 00-2 一拍之内谁先谁后。RTL：IFU 的 valid-ready 链（[`f1_fire`、`f1_ready`](../../XiangShan/src/main/scala/xiangshan/frontend/IFU.scala#L296)、[`f2_fire`](../../XiangShan/src/main/scala/xiangshan/frontend/IFU.scala#L362)），同拍旁路（IBuffer 的 [`useBypass`](../../XiangShan/src/main/scala/xiangshan/frontend/IBuffer.scala#L215)、FTQ 的 [`bpu_in_bypass_buf`](../../XiangShan/src/main/scala/xiangshan/frontend/NewFtq.scala#L875)）。gem5：[`CPU::tick`](../../GEM5-XS/src/cpu/o3/cpu.cc#L561) 里 fetch→decode→rename→iew→commit 的调用顺序、[`Fetch::tick`](../../GEM5-XS/src/cpu/o3/fetch.cc#L1312) 先取指后预测、cache 响应事件优先于 CPU tick（[`base.cc:89`](../../GEM5-XS/src/mem/cache/base.cc#L89)）。问题：RTL 的同拍组合依赖，gem5 靠什么顺序保证。
+- [ ] 00-3 冲刷与推翻。RTL：IFU 的 [flush 方程](../../XiangShan/src/main/scala/xiangshan/frontend/IFU.scala#L255)、后端的 [`robIdx.needFlush`](../../XiangShan/src/main/scala/xiangshan/backend/datapath/DataPath.scala#L588)、BPU 的 [`s2_redirect`](../../XiangShan/src/main/scala/xiangshan/frontend/BPU.scala#L704) 加 FTQ [指针回拉](../../XiangShan/src/main/scala/xiangshan/frontend/NewFtq.scala#L760)。gem5：squash 经 TimeBuffer 往前级传（[`fromDecode`](../../GEM5-XS/src/cpu/o3/fetch.cc#L397)、[`handleDecodeSquash`](../../GEM5-XS/src/cpu/o3/fetch.cc#L1811)），BPU 用 [`numOverrideBubbles`](../../GEM5-XS/src/cpu/pred/ftb/decoupled_bpred.cc#L649) 补空泡。问题："先写后改"和"算完再补空泡"各丢掉了什么。
+- [ ] 00-4 参数从哪来。RTL：[`Parameters.scala`](../../XiangShan/src/main/scala/xiangshan/Parameters.scala#L149) 的默认值，[`Configs.scala`](../../XiangShan/src/main/scala/top/Configs.scala#L460) 的 Config 叠加；本仓库的 emu 用的是 [`CONFIG=DefaultConfig`](../../scripts/build_emu_kmhv2.sh#L6)，不是 `KunminghuV2Config`。gem5：[`kmhv2.py`](../../GEM5-XS/configs/example/kmhv2.py) → [`xiangshan.py`](../../GEM5-XS/configs/common/xiangshan.py#L27)（`kmh_align` 一组开关、第 353 行的疑似 bug）→ [`BaseO3CPU.py`](../../GEM5-XS/src/cpu/o3/BaseO3CPU.py#L117) 的默认值。问题：怎么确认一个参数最终生效的值。
 
 ### 第一步：香山流水线微架构，RTL 与 gem5 对照
 
@@ -115,10 +124,10 @@ CPU 这一站结束时，希望手里有三样东西：一张"六大思想 × �
 
 | 内容 | 位置 |
 | --- | --- |
+| 学习笔记：00 两种写法 | [00 gem5 的建模手法与 RTL 的实现写法](00-0-modeling-overview.md)（框架） |
 | 学习笔记：01 流水线 | [01 香山流水线微架构总览](01-0-pipeline-overview.md)（进行中） |
 | 学习笔记：02 存储层次 | [02 存储层次总览](02-0-memory-overview.md)（框架） |
 | 学习笔记：03 Top-down 口径 | [03 Top-down 计数器口径总览](03-0-topdown-overview.md)（框架） |
-| 学习笔记：00 两种写法 | [00 gem5 的建模手法与 RTL 的实现写法](00-0-modeling-overview.md)（框架） |
 | 工作区总览、锁定版本、使用方法 | 仓库 [`README.md`](../../README.md) |
 | difftest 调用约定、REF 为什么要被告知 | 仓库 [`Docs/difftest.md`](../difftest.md) |
 | 检查点生成、恢复、78 号点的全部数据 | 仓库 [`Docs/checkpoint.md`](../checkpoint.md) |
