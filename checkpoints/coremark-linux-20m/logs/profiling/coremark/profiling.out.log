@@ -1,6 +1,6 @@
 [1;34m[src/monitor/monitor.c:225,parse_args] Doing Simpoint Profiling[0m
 [1;34m[src/checkpoint/path_manager.cpp:55,init] Cpt id: -1[0m
-[1;34m[src/checkpoint/path_manager.cpp:73,setSimpointProfilingOutputDir] Created /home/data/wanli/Cmodel_projects/xiangshan-correlation/checkpoints/coremark-linux-20m/profiling/coremark/
+[1;34m[src/checkpoint/path_manager.cpp:73,setSimpointProfilingOutputDir] Created $CMODEL_ROOT/checkpoints/coremark-linux-20m/profiling/coremark/
 [0m
 [1;34m[src/checkpoint/simpoint.cpp:85,init] Doing simpoint profiling with interval 20000000[0m
 [1;34m[src/checkpoint/serializer.cpp:639,next_index] set next index 0[0m
@@ -11,19 +11,19 @@
 [1;34m[src/device/io/port-io.c:35,add_pio_map_with_diff] Add port-io map 'screen' at [0x0000000000000100, 0x0000000000000107][0m
 [1;34m[src/device/io/port-io.c:35,add_pio_map_with_diff] Add port-io map 'keyboard' at [0x0000000000000060, 0x0000000000000063][0m
 [1;34m[src/device/sdcard.c:137,init_sdcard] Can not find sdcard image: [0m
-[1;34m[src/monitor/image_loader.c:205,load_img] Loading image (checkpoint/bare metal app/bbl) from cmdline: /home/data/wanli/Cmodel_projects/xiangshan-correlation/workload-builder/build/linux-workloads/coremark/fw_payload.bin
+[1;34m[src/monitor/image_loader.c:205,load_img] Loading image (checkpoint/bare metal app/bbl) from cmdline: $CMODEL_ROOT/workload-builder/build/linux-workloads/coremark/fw_payload.bin
 [0m
-[1;34m[src/monitor/image_loader.c:250,load_img] Read 27288064 bytes from file /home/data/wanli/Cmodel_projects/xiangshan-correlation/workload-builder/build/linux-workloads/coremark/fw_payload.bin to 0x0x6977ff400000[0m
+[1;34m[src/monitor/image_loader.c:250,load_img] Read 27288064 bytes from file $CMODEL_ROOT/workload-builder/build/linux-workloads/coremark/fw_payload.bin to 0x0x6977ff400000[0m
 [1;34m[src/monitor/monitor.c:63,welcome] Debug: [1;32mOFF[0m[0m
 [1;34m[src/monitor/monitor.c:68,welcome] Build time: 09:16:50, Sep 24 2026[0m
 Welcome to [1;41m[1;33mriscv64[0m-NEMU!
 For help, type "help"
-[1;34m[/home/data/wanli/Cmodel_projects/xiangshan-correlation/NEMU-cpt/src/isa/riscv64/include/../instr/special.h:38,execute] nemu_trap case 100[0m
+[1;34m[$CMODEL_ROOT/NEMU-cpt/src/isa/riscv64/include/../instr/special.h:38,execute] nemu_trap case 100[0m
 [1;34m[src/isa/riscv64/system/priv.c:2100,disable_time_intr] Disabled machine/supervisor/virtualized-supervisor time interruption
 [0m
-[1;34m[/home/data/wanli/Cmodel_projects/xiangshan-correlation/NEMU-cpt/src/isa/riscv64/include/../instr/special.h:38,execute] nemu_trap case 101[0m
+[1;34m[$CMODEL_ROOT/NEMU-cpt/src/isa/riscv64/include/../instr/special.h:38,execute] nemu_trap case 101[0m
 [1;34m[src/profiling/profiling_control.c:22,start_profiling] Start profiling. Setting inst count base to Current inst count 68280880.[0m
-[1;34m[/home/data/wanli/Cmodel_projects/xiangshan-correlation/NEMU-cpt/src/isa/riscv64/include/../instr/special.h:38,execute] nemu_trap case 0[0m
+[1;34m[$CMODEL_ROOT/NEMU-cpt/src/isa/riscv64/include/../instr/special.h:38,execute] nemu_trap case 0[0m
 [1;34m[src/cpu/cpu-exec.c:1034,cpu_exec] nemu: [1;32mHIT GOOD TRAP[0m at pc = 0x0000002ae5f6578c[0m
 [1;34m[src/cpu/cpu-exec.c:1040,cpu_exec] trap code:0[0m
 [1;34m[src/cpu/cpu-exec.c:172,monitor_statistic] host time spent = 30,211,124 us[0m

@@ -1,13 +1,13 @@
 Archive: coremark-linux-20m
-Archive root: /home/data/wanli/Cmodel_projects/xiangshan-correlation/checkpoints/coremark-linux-20m
-[2026-09-24 09:48:23] [Workload] name=coremark archive=coremark-linux-20m input=/home/data/wanli/Cmodel_projects/xiangshan-correlation/workload-builder/build/linux-workloads/coremark/fw_payload.bin progress=0/1 (0%) remaining=1
+Archive root: $CMODEL_ROOT/checkpoints/coremark-linux-20m
+[2026-09-24 09:48:23] [Workload] name=coremark archive=coremark-linux-20m input=$CMODEL_ROOT/workload-builder/build/linux-workloads/coremark/fw_payload.bin progress=0/1 (0%) remaining=1
 [2026-09-24 09:48:23] [Profiling] start workload=coremark interval=20000000 cpu=0 mem=0 progress=0/1 (0%) remaining=1
-[2026-09-24 09:48:53] [Profiling] done workload=coremark log=/home/data/wanli/Cmodel_projects/xiangshan-correlation/checkpoints/coremark-linux-20m/logs/profiling/coremark progress=0/1 (0%) remaining=1
+[2026-09-24 09:48:53] [Profiling] done workload=coremark log=$CMODEL_ROOT/checkpoints/coremark-linux-20m/logs/profiling/coremark progress=0/1 (0%) remaining=1
 [2026-09-24 09:48:53] [Clustering] start workload=coremark cpu=0 mem=0 progress=0/1 (0%) remaining=1
-[2026-09-24 09:48:53] [Clustering] done workload=coremark log=/home/data/wanli/Cmodel_projects/xiangshan-correlation/checkpoints/coremark-linux-20m/logs/cluster/coremark progress=0/1 (0%) remaining=1
+[2026-09-24 09:48:53] [Clustering] done workload=coremark log=$CMODEL_ROOT/checkpoints/coremark-linux-20m/logs/cluster/coremark progress=0/1 (0%) remaining=1
 [2026-09-24 09:48:53] [Checkpoint] start workload=coremark interval=20000000 cpu=0 mem=0 progress=0/1 (0%) remaining=1
-[2026-09-24 09:50:05] [Checkpoint] done workload=coremark log=/home/data/wanli/Cmodel_projects/xiangshan-correlation/checkpoints/coremark-linux-20m/logs/checkpoint/coremark progress=0/1 (0%) remaining=1
+[2026-09-24 09:50:05] [Checkpoint] done workload=coremark log=$CMODEL_ROOT/checkpoints/coremark-linux-20m/logs/checkpoint/coremark progress=0/1 (0%) remaining=1
 [2026-09-24 09:50:05] [Metadata] start workload=coremark progress=0/1 (0%) remaining=1
 [2026-09-24 09:50:05] [Metadata] done workload=coremark progress=0/1 (0%) remaining=1
-[2026-09-24 09:50:05] [Workload] done name=coremark checkpoints=11 dir=/home/data/wanli/Cmodel_projects/xiangshan-correlation/checkpoints/coremark-linux-20m/checkpoint/coremark progress=1/1 (100%) remaining=0
+[2026-09-24 09:50:05] [Workload] done name=coremark checkpoints=11 dir=$CMODEL_ROOT/checkpoints/coremark-linux-20m/checkpoint/coremark progress=1/1 (100%) remaining=0
 GEN_EXIT=0

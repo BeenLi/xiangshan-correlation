@@ -13,7 +13,7 @@
 [1;34m[src/checkpoint/serializer.cpp:562,init] Simpoint 9: @ 66, weight: 0.110169[0m
 [1;34m[src/checkpoint/serializer.cpp:562,init] Simpoint 10: @ 28, weight: 0.059322[0m
 [1;34m[src/checkpoint/serializer.cpp:639,next_index] set next index 0[0m
-[1;34m[src/checkpoint/path_manager.cpp:90,setCheckpointingOutputDir] Created /home/data/wanli/Cmodel_projects/xiangshan-correlation/checkpoints/coremark-linux-20m/checkpoint/coremark/0/
+[1;34m[src/checkpoint/path_manager.cpp:90,setCheckpointingOutputDir] Created $CMODEL_ROOT/checkpoints/coremark-linux-20m/checkpoint/coremark/0/
 [0m
 [1;34m[src/isa/riscv64/init.c:266,init_isa] NEMU will start from pc 0x80000000[0m
 [1;34m[src/device/io/port-io.c:35,add_pio_map_with_diff] Add port-io map 'uart16550' at [0x00000000000003f8, 0x0000000000000417][0m
@@ -21,17 +21,17 @@
 [1;34m[src/device/io/port-io.c:35,add_pio_map_with_diff] Add port-io map 'screen' at [0x0000000000000100, 0x0000000000000107][0m
 [1;34m[src/device/io/port-io.c:35,add_pio_map_with_diff] Add port-io map 'keyboard' at [0x0000000000000060, 0x0000000000000063][0m
 [1;34m[src/device/sdcard.c:137,init_sdcard] Can not find sdcard image: [0m
-[1;34m[src/monitor/image_loader.c:205,load_img] Loading image (checkpoint/bare metal app/bbl) from cmdline: /home/data/wanli/Cmodel_projects/xiangshan-correlation/workload-builder/build/linux-workloads/coremark/fw_payload.bin
+[1;34m[src/monitor/image_loader.c:205,load_img] Loading image (checkpoint/bare metal app/bbl) from cmdline: $CMODEL_ROOT/workload-builder/build/linux-workloads/coremark/fw_payload.bin
 [0m
-[1;34m[src/monitor/image_loader.c:250,load_img] Read 27288064 bytes from file /home/data/wanli/Cmodel_projects/xiangshan-correlation/workload-builder/build/linux-workloads/coremark/fw_payload.bin to 0x0x768c69600000[0m
+[1;34m[src/monitor/image_loader.c:250,load_img] Read 27288064 bytes from file $CMODEL_ROOT/workload-builder/build/linux-workloads/coremark/fw_payload.bin to 0x0x768c69600000[0m
 [1;34m[src/monitor/monitor.c:63,welcome] Debug: [1;32mOFF[0m[0m
 [1;34m[src/monitor/monitor.c:68,welcome] Build time: 09:16:50, Sep 24 2026[0m
 Welcome to [1;41m[1;33mriscv64[0m-NEMU!
 For help, type "help"
-[1;34m[/home/data/wanli/Cmodel_projects/xiangshan-correlation/NEMU-cpt/src/isa/riscv64/include/../instr/special.h:38,execute] nemu_trap case 100[0m
+[1;34m[$CMODEL_ROOT/NEMU-cpt/src/isa/riscv64/include/../instr/special.h:38,execute] nemu_trap case 100[0m
 [1;34m[src/isa/riscv64/system/priv.c:2100,disable_time_intr] Disabled machine/supervisor/virtualized-supervisor time interruption
 [0m
-[1;34m[/home/data/wanli/Cmodel_projects/xiangshan-correlation/NEMU-cpt/src/isa/riscv64/include/../instr/special.h:38,execute] nemu_trap case 101[0m
+[1;34m[$CMODEL_ROOT/NEMU-cpt/src/isa/riscv64/include/../instr/special.h:38,execute] nemu_trap case 101[0m
 [1;34m[src/profiling/profiling_control.c:22,start_profiling] Start profiling. Setting inst count base to Current inst count 68280880.[0m
 [1;34m[src/checkpoint/serializer.cpp:582,instrsCouldTakeCpt] Should take cpt now: 9 next point 0[0m
 [1;34m[src/checkpoint/serializer.cpp:381,serializeRegs] Writing int registers to checkpoint memory @[0xedde0, 0xedee0) [0xedde0, 0xedee0)[0m
@@ -109,14 +109,14 @@ For help, type "help"
 [1;34m[src/checkpoint/serializer.cpp:473,serializeRegs] Record mtimecmp: 0xffffffffffffffff at addr 0xecdd0[0m
 [1;34m[src/checkpoint/serializer.cpp:203,serializePMem] Host physical address: 0x768c69600000 size: 8000000 (MEMORY_SIZE: 7ff80000000)[0m
 [1;34m[src/checkpoint/serializer.cpp:288,serializePMem] Using ZSTD format generate checkpoint[0m
-[1;34m[src/checkpoint/serializer.cpp:291,serializePMem] Opening /home/data/wanli/Cmodel_projects/xiangshan-correlation/checkpoints/coremark-linux-20m/checkpoint/coremark/0/_0_0.008475_memory_.zstd as memory output file[0m
+[1;34m[src/checkpoint/serializer.cpp:291,serializePMem] Opening $CMODEL_ROOT/checkpoints/coremark-linux-20m/checkpoint/coremark/0/_0_0.008475_memory_.zstd as memory output file[0m
 [1;34m[src/checkpoint/serializer.cpp:327,serializePMem] pmem compress success, compress size 9981174[0m
 [1;34m[src/checkpoint/serializer.cpp:372,serializePMem] Checkpoint done!
 [0m
 [1;34m[src/checkpoint/serializer.cpp:613,notify_taken] Taking checkpoint @ instruction count 9[0m
 [1;34m[src/checkpoint/serializer.cpp:615,notify_taken] simpoint2Weights size: 11[0m
 [1;34m[src/checkpoint/serializer.cpp:639,next_index] set next index 4[0m
-[1;34m[src/checkpoint/path_manager.cpp:90,setCheckpointingOutputDir] Created /home/data/wanli/Cmodel_projects/xiangshan-correlation/checkpoints/coremark-linux-20m/checkpoint/coremark/4/
+[1;34m[src/checkpoint/path_manager.cpp:90,setCheckpointingOutputDir] Created $CMODEL_ROOT/checkpoints/coremark-linux-20m/checkpoint/coremark/4/
 [0m
 [1;34m[src/checkpoint/serializer.cpp:659,try_take_cpt] return true[0m
 [1;34m[src/cpu/cpu-exec.c:408,per_bb_profile] Have taken checkpoint on pc 0x2ae5f65710[0m
@@ -198,14 +198,14 @@ For help, type "help"
 [1;34m[src/checkpoint/serializer.cpp:473,serializeRegs] Record mtimecmp: 0xffffffffffffffff at addr 0xecdd0[0m
 [1;34m[src/checkpoint/serializer.cpp:203,serializePMem] Host physical address: 0x768c69600000 size: 8000000 (MEMORY_SIZE: 7ff80000000)[0m
 [1;34m[src/checkpoint/serializer.cpp:288,serializePMem] Using ZSTD format generate checkpoint[0m
-[1;34m[src/checkpoint/serializer.cpp:291,serializePMem] Opening /home/data/wanli/Cmodel_projects/xiangshan-correlation/checkpoints/coremark-linux-20m/checkpoint/coremark/4/_4_0.076271_memory_.zstd as memory output file[0m
+[1;34m[src/checkpoint/serializer.cpp:291,serializePMem] Opening $CMODEL_ROOT/checkpoints/coremark-linux-20m/checkpoint/coremark/4/_4_0.076271_memory_.zstd as memory output file[0m
 [1;34m[src/checkpoint/serializer.cpp:327,serializePMem] pmem compress success, compress size 9990095[0m
 [1;34m[src/checkpoint/serializer.cpp:372,serializePMem] Checkpoint done!
 [0m
 [1;34m[src/checkpoint/serializer.cpp:613,notify_taken] Taking checkpoint @ instruction count 60000118[0m
 [1;34m[src/checkpoint/serializer.cpp:615,notify_taken] simpoint2Weights size: 10[0m
 [1;34m[src/checkpoint/serializer.cpp:639,next_index] set next index 12[0m
-[1;34m[src/checkpoint/path_manager.cpp:90,setCheckpointingOutputDir] Created /home/data/wanli/Cmodel_projects/xiangshan-correlation/checkpoints/coremark-linux-20m/checkpoint/coremark/12/
+[1;34m[src/checkpoint/path_manager.cpp:90,setCheckpointingOutputDir] Created $CMODEL_ROOT/checkpoints/coremark-linux-20m/checkpoint/coremark/12/
 [0m
 [1;34m[src/checkpoint/serializer.cpp:659,try_take_cpt] return true[0m
 [1;34m[src/cpu/cpu-exec.c:408,per_bb_profile] Have taken checkpoint on pc 0x2aaac522f4[0m
@@ -289,14 +289,14 @@ For help, type "help"
 [1;34m[src/checkpoint/serializer.cpp:473,serializeRegs] Record mtimecmp: 0xffffffffffffffff at addr 0xecdd0[0m
 [1;34m[src/checkpoint/serializer.cpp:203,serializePMem] Host physical address: 0x768c69600000 size: 8000000 (MEMORY_SIZE: 7ff80000000)[0m
 [1;34m[src/checkpoint/serializer.cpp:288,serializePMem] Using ZSTD format generate checkpoint[0m
-[1;34m[src/checkpoint/serializer.cpp:291,serializePMem] Opening /home/data/wanli/Cmodel_projects/xiangshan-correlation/checkpoints/coremark-linux-20m/checkpoint/coremark/12/_12_0.093220_memory_.zstd as memory output file[0m
+[1;34m[src/checkpoint/serializer.cpp:291,serializePMem] Opening $CMODEL_ROOT/checkpoints/coremark-linux-20m/checkpoint/coremark/12/_12_0.093220_memory_.zstd as memory output file[0m
 [1;34m[src/checkpoint/serializer.cpp:327,serializePMem] pmem compress success, compress size 9990093[0m
 [1;34m[src/checkpoint/serializer.cpp:372,serializePMem] Checkpoint done!
 [0m
 [1;34m[src/checkpoint/serializer.cpp:613,notify_taken] Taking checkpoint @ instruction count 220000003[0m
 [1;34m[src/checkpoint/serializer.cpp:615,notify_taken] simpoint2Weights size: 9[0m
 [1;34m[src/checkpoint/serializer.cpp:639,next_index] set next index 27[0m
-[1;34m[src/checkpoint/path_manager.cpp:90,setCheckpointingOutputDir] Created /home/data/wanli/Cmodel_projects/xiangshan-correlation/checkpoints/coremark-linux-20m/checkpoint/coremark/27/
+[1;34m[src/checkpoint/path_manager.cpp:90,setCheckpointingOutputDir] Created $CMODEL_ROOT/checkpoints/coremark-linux-20m/checkpoint/coremark/27/
 [0m
 [1;34m[src/checkpoint/serializer.cpp:659,try_take_cpt] return true[0m
 [1;34m[src/cpu/cpu-exec.c:408,per_bb_profile] Have taken checkpoint on pc 0x2aaac52026[0m
@@ -379,14 +379,14 @@ For help, type "help"
 [1;34m[src/checkpoint/serializer.cpp:473,serializeRegs] Record mtimecmp: 0xffffffffffffffff at addr 0xecdd0[0m
 [1;34m[src/checkpoint/serializer.cpp:203,serializePMem] Host physical address: 0x768c69600000 size: 8000000 (MEMORY_SIZE: 7ff80000000)[0m
 [1;34m[src/checkpoint/serializer.cpp:288,serializePMem] Using ZSTD format generate checkpoint[0m
-[1;34m[src/checkpoint/serializer.cpp:291,serializePMem] Opening /home/data/wanli/Cmodel_projects/xiangshan-correlation/checkpoints/coremark-linux-20m/checkpoint/coremark/27/_27_0.093220_memory_.zstd as memory output file[0m
+[1;34m[src/checkpoint/serializer.cpp:291,serializePMem] Opening $CMODEL_ROOT/checkpoints/coremark-linux-20m/checkpoint/coremark/27/_27_0.093220_memory_.zstd as memory output file[0m
 [1;34m[src/checkpoint/serializer.cpp:327,serializePMem] pmem compress success, compress size 9990114[0m
 [1;34m[src/checkpoint/serializer.cpp:372,serializePMem] Checkpoint done!
 [0m
 [1;34m[src/checkpoint/serializer.cpp:613,notify_taken] Taking checkpoint @ instruction count 520000132[0m
 [1;34m[src/checkpoint/serializer.cpp:615,notify_taken] simpoint2Weights size: 8[0m
 [1;34m[src/checkpoint/serializer.cpp:639,next_index] set next index 28[0m
-[1;34m[src/checkpoint/path_manager.cpp:90,setCheckpointingOutputDir] Created /home/data/wanli/Cmodel_projects/xiangshan-correlation/checkpoints/coremark-linux-20m/checkpoint/coremark/28/
+[1;34m[src/checkpoint/path_manager.cpp:90,setCheckpointingOutputDir] Created $CMODEL_ROOT/checkpoints/coremark-linux-20m/checkpoint/coremark/28/
 [0m
 [1;34m[src/checkpoint/serializer.cpp:659,try_take_cpt] return true[0m
 [1;34m[src/cpu/cpu-exec.c:408,per_bb_profile] Have taken checkpoint on pc 0x2aaac516d4[0m
@@ -468,14 +468,14 @@ For help, type "help"
 [1;34m[src/checkpoint/serializer.cpp:473,serializeRegs] Record mtimecmp: 0xffffffffffffffff at addr 0xecdd0[0m
 [1;34m[src/checkpoint/serializer.cpp:203,serializePMem] Host physical address: 0x768c69600000 size: 8000000 (MEMORY_SIZE: 7ff80000000)[0m
 [1;34m[src/checkpoint/serializer.cpp:288,serializePMem] Using ZSTD format generate checkpoint[0m
-[1;34m[src/checkpoint/serializer.cpp:291,serializePMem] Opening /home/data/wanli/Cmodel_projects/xiangshan-correlation/checkpoints/coremark-linux-20m/checkpoint/coremark/28/_28_0.059322_memory_.zstd as memory output file[0m
+[1;34m[src/checkpoint/serializer.cpp:291,serializePMem] Opening $CMODEL_ROOT/checkpoints/coremark-linux-20m/checkpoint/coremark/28/_28_0.059322_memory_.zstd as memory output file[0m
 [1;34m[src/checkpoint/serializer.cpp:327,serializePMem] pmem compress success, compress size 9990109[0m
 [1;34m[src/checkpoint/serializer.cpp:372,serializePMem] Checkpoint done!
 [0m
 [1;34m[src/checkpoint/serializer.cpp:613,notify_taken] Taking checkpoint @ instruction count 540000002[0m
 [1;34m[src/checkpoint/serializer.cpp:615,notify_taken] simpoint2Weights size: 7[0m
 [1;34m[src/checkpoint/serializer.cpp:639,next_index] set next index 66[0m
-[1;34m[src/checkpoint/path_manager.cpp:90,setCheckpointingOutputDir] Created /home/data/wanli/Cmodel_projects/xiangshan-correlation/checkpoints/coremark-linux-20m/checkpoint/coremark/66/
+[1;34m[src/checkpoint/path_manager.cpp:90,setCheckpointingOutputDir] Created $CMODEL_ROOT/checkpoints/coremark-linux-20m/checkpoint/coremark/66/
 [0m
 [1;34m[src/checkpoint/serializer.cpp:659,try_take_cpt] return true[0m
 [1;34m[src/cpu/cpu-exec.c:408,per_bb_profile] Have taken checkpoint on pc 0x2aaac51ace[0m
@@ -560,14 +560,14 @@ For help, type "help"
 [1;34m[src/checkpoint/serializer.cpp:473,serializeRegs] Record mtimecmp: 0xffffffffffffffff at addr 0xecdd0[0m
 [1;34m[src/checkpoint/serializer.cpp:203,serializePMem] Host physical address: 0x768c69600000 size: 8000000 (MEMORY_SIZE: 7ff80000000)[0m
 [1;34m[src/checkpoint/serializer.cpp:288,serializePMem] Using ZSTD format generate checkpoint[0m
-[1;34m[src/checkpoint/serializer.cpp:291,serializePMem] Opening /home/data/wanli/Cmodel_projects/xiangshan-correlation/checkpoints/coremark-linux-20m/checkpoint/coremark/66/_66_0.110169_memory_.zstd as memory output file[0m
+[1;34m[src/checkpoint/serializer.cpp:291,serializePMem] Opening $CMODEL_ROOT/checkpoints/coremark-linux-20m/checkpoint/coremark/66/_66_0.110169_memory_.zstd as memory output file[0m
 [1;34m[src/checkpoint/serializer.cpp:327,serializePMem] pmem compress success, compress size 9990118[0m
 [1;34m[src/checkpoint/serializer.cpp:372,serializePMem] Checkpoint done!
 [0m
 [1;34m[src/checkpoint/serializer.cpp:613,notify_taken] Taking checkpoint @ instruction count 1300000011[0m
 [1;34m[src/checkpoint/serializer.cpp:615,notify_taken] simpoint2Weights size: 6[0m
 [1;34m[src/checkpoint/serializer.cpp:639,next_index] set next index 77[0m
-[1;34m[src/checkpoint/path_manager.cpp:90,setCheckpointingOutputDir] Created /home/data/wanli/Cmodel_projects/xiangshan-correlation/checkpoints/coremark-linux-20m/checkpoint/coremark/77/
+[1;34m[src/checkpoint/path_manager.cpp:90,setCheckpointingOutputDir] Created $CMODEL_ROOT/checkpoints/coremark-linux-20m/checkpoint/coremark/77/
 [0m
 [1;34m[src/checkpoint/serializer.cpp:659,try_take_cpt] return true[0m
 [1;34m[src/cpu/cpu-exec.c:408,per_bb_profile] Have taken checkpoint on pc 0x2aaac51b3e[0m
@@ -651,14 +651,14 @@ For help, type "help"
 [1;34m[src/checkpoint/serializer.cpp:473,serializeRegs] Record mtimecmp: 0xffffffffffffffff at addr 0xecdd0[0m
 [1;34m[src/checkpoint/serializer.cpp:203,serializePMem] Host physical address: 0x768c69600000 size: 8000000 (MEMORY_SIZE: 7ff80000000)[0m
 [1;34m[src/checkpoint/serializer.cpp:288,serializePMem] Using ZSTD format generate checkpoint[0m
-[1;34m[src/checkpoint/serializer.cpp:291,serializePMem] Opening /home/data/wanli/Cmodel_projects/xiangshan-correlation/checkpoints/coremark-linux-20m/checkpoint/coremark/77/_77_0.161017_memory_.zstd as memory output file[0m
+[1;34m[src/checkpoint/serializer.cpp:291,serializePMem] Opening $CMODEL_ROOT/checkpoints/coremark-linux-20m/checkpoint/coremark/77/_77_0.161017_memory_.zstd as memory output file[0m
 [1;34m[src/checkpoint/serializer.cpp:327,serializePMem] pmem compress success, compress size 9990084[0m
 [1;34m[src/checkpoint/serializer.cpp:372,serializePMem] Checkpoint done!
 [0m
 [1;34m[src/checkpoint/serializer.cpp:613,notify_taken] Taking checkpoint @ instruction count 1520000019[0m
 [1;34m[src/checkpoint/serializer.cpp:615,notify_taken] simpoint2Weights size: 5[0m
 [1;34m[src/checkpoint/serializer.cpp:639,next_index] set next index 78[0m
-[1;34m[src/checkpoint/path_manager.cpp:90,setCheckpointingOutputDir] Created /home/data/wanli/Cmodel_projects/xiangshan-correlation/checkpoints/coremark-linux-20m/checkpoint/coremark/78/
+[1;34m[src/checkpoint/path_manager.cpp:90,setCheckpointingOutputDir] Created $CMODEL_ROOT/checkpoints/coremark-linux-20m/checkpoint/coremark/78/
 [0m
 [1;34m[src/checkpoint/serializer.cpp:659,try_take_cpt] return true[0m
 [1;34m[src/cpu/cpu-exec.c:408,per_bb_profile] Have taken checkpoint on pc 0x2aaac51ace[0m
@@ -740,14 +740,14 @@ For help, type "help"
 [1;34m[src/checkpoint/serializer.cpp:473,serializeRegs] Record mtimecmp: 0xffffffffffffffff at addr 0xecdd0[0m
 [1;34m[src/checkpoint/serializer.cpp:203,serializePMem] Host physical address: 0x768c69600000 size: 8000000 (MEMORY_SIZE: 7ff80000000)[0m
 [1;34m[src/checkpoint/serializer.cpp:288,serializePMem] Using ZSTD format generate checkpoint[0m
-[1;34m[src/checkpoint/serializer.cpp:291,serializePMem] Opening /home/data/wanli/Cmodel_projects/xiangshan-correlation/checkpoints/coremark-linux-20m/checkpoint/coremark/78/_78_0.169492_memory_.zstd as memory output file[0m
+[1;34m[src/checkpoint/serializer.cpp:291,serializePMem] Opening $CMODEL_ROOT/checkpoints/coremark-linux-20m/checkpoint/coremark/78/_78_0.169492_memory_.zstd as memory output file[0m
 [1;34m[src/checkpoint/serializer.cpp:327,serializePMem] pmem compress success, compress size 9990096[0m
 [1;34m[src/checkpoint/serializer.cpp:372,serializePMem] Checkpoint done!
 [0m
 [1;34m[src/checkpoint/serializer.cpp:613,notify_taken] Taking checkpoint @ instruction count 1540000198[0m
 [1;34m[src/checkpoint/serializer.cpp:615,notify_taken] simpoint2Weights size: 4[0m
 [1;34m[src/checkpoint/serializer.cpp:639,next_index] set next index 82[0m
-[1;34m[src/checkpoint/path_manager.cpp:90,setCheckpointingOutputDir] Created /home/data/wanli/Cmodel_projects/xiangshan-correlation/checkpoints/coremark-linux-20m/checkpoint/coremark/82/
+[1;34m[src/checkpoint/path_manager.cpp:90,setCheckpointingOutputDir] Created $CMODEL_ROOT/checkpoints/coremark-linux-20m/checkpoint/coremark/82/
 [0m
 [1;34m[src/checkpoint/serializer.cpp:659,try_take_cpt] return true[0m
 [1;34m[src/cpu/cpu-exec.c:408,per_bb_profile] Have taken checkpoint on pc 0x2aaac522f4[0m
@@ -830,14 +830,14 @@ For help, type "help"
 [1;34m[src/checkpoint/serializer.cpp:473,serializeRegs] Record mtimecmp: 0xffffffffffffffff at addr 0xecdd0[0m
 [1;34m[src/checkpoint/serializer.cpp:203,serializePMem] Host physical address: 0x768c69600000 size: 8000000 (MEMORY_SIZE: 7ff80000000)[0m
 [1;34m[src/checkpoint/serializer.cpp:288,serializePMem] Using ZSTD format generate checkpoint[0m
-[1;34m[src/checkpoint/serializer.cpp:291,serializePMem] Opening /home/data/wanli/Cmodel_projects/xiangshan-correlation/checkpoints/coremark-linux-20m/checkpoint/coremark/82/_82_0.059322_memory_.zstd as memory output file[0m
+[1;34m[src/checkpoint/serializer.cpp:291,serializePMem] Opening $CMODEL_ROOT/checkpoints/coremark-linux-20m/checkpoint/coremark/82/_82_0.059322_memory_.zstd as memory output file[0m
 [1;34m[src/checkpoint/serializer.cpp:327,serializePMem] pmem compress success, compress size 9990143[0m
 [1;34m[src/checkpoint/serializer.cpp:372,serializePMem] Checkpoint done!
 [0m
 [1;34m[src/checkpoint/serializer.cpp:613,notify_taken] Taking checkpoint @ instruction count 1620000002[0m
 [1;34m[src/checkpoint/serializer.cpp:615,notify_taken] simpoint2Weights size: 3[0m
 [1;34m[src/checkpoint/serializer.cpp:639,next_index] set next index 108[0m
-[1;34m[src/checkpoint/path_manager.cpp:90,setCheckpointingOutputDir] Created /home/data/wanli/Cmodel_projects/xiangshan-correlation/checkpoints/coremark-linux-20m/checkpoint/coremark/108/
+[1;34m[src/checkpoint/path_manager.cpp:90,setCheckpointingOutputDir] Created $CMODEL_ROOT/checkpoints/coremark-linux-20m/checkpoint/coremark/108/
 [0m
 [1;34m[src/checkpoint/serializer.cpp:659,try_take_cpt] return true[0m
 [1;34m[src/cpu/cpu-exec.c:408,per_bb_profile] Have taken checkpoint on pc 0x2aaac515ba[0m
@@ -923,14 +923,14 @@ For help, type "help"
 [1;34m[src/checkpoint/serializer.cpp:473,serializeRegs] Record mtimecmp: 0xffffffffffffffff at addr 0xecdd0[0m
 [1;34m[src/checkpoint/serializer.cpp:203,serializePMem] Host physical address: 0x768c69600000 size: 8000000 (MEMORY_SIZE: 7ff80000000)[0m
 [1;34m[src/checkpoint/serializer.cpp:288,serializePMem] Using ZSTD format generate checkpoint[0m
-[1;34m[src/checkpoint/serializer.cpp:291,serializePMem] Opening /home/data/wanli/Cmodel_projects/xiangshan-correlation/checkpoints/coremark-linux-20m/checkpoint/coremark/108/_108_0.042373_memory_.zstd as memory output file[0m
+[1;34m[src/checkpoint/serializer.cpp:291,serializePMem] Opening $CMODEL_ROOT/checkpoints/coremark-linux-20m/checkpoint/coremark/108/_108_0.042373_memory_.zstd as memory output file[0m
 [1;34m[src/checkpoint/serializer.cpp:327,serializePMem] pmem compress success, compress size 9990082[0m
 [1;34m[src/checkpoint/serializer.cpp:372,serializePMem] Checkpoint done!
 [0m
 [1;34m[src/checkpoint/serializer.cpp:613,notify_taken] Taking checkpoint @ instruction count 2140000001[0m
 [1;34m[src/checkpoint/serializer.cpp:615,notify_taken] simpoint2Weights size: 2[0m
 [1;34m[src/checkpoint/serializer.cpp:639,next_index] set next index 117[0m
-[1;34m[src/checkpoint/path_manager.cpp:90,setCheckpointingOutputDir] Created /home/data/wanli/Cmodel_projects/xiangshan-correlation/checkpoints/coremark-linux-20m/checkpoint/coremark/117/
+[1;34m[src/checkpoint/path_manager.cpp:90,setCheckpointingOutputDir] Created $CMODEL_ROOT/checkpoints/coremark-linux-20m/checkpoint/coremark/117/
 [0m
 [1;34m[src/checkpoint/serializer.cpp:659,try_take_cpt] return true[0m
 [1;34m[src/cpu/cpu-exec.c:408,per_bb_profile] Have taken checkpoint on pc 0x2aaac51610[0m
@@ -1014,7 +1014,7 @@ For help, type "help"
 [1;34m[src/checkpoint/serializer.cpp:473,serializeRegs] Record mtimecmp: 0xffffffffffffffff at addr 0xecdd0[0m
 [1;34m[src/checkpoint/serializer.cpp:203,serializePMem] Host physical address: 0x768c69600000 size: 8000000 (MEMORY_SIZE: 7ff80000000)[0m
 [1;34m[src/checkpoint/serializer.cpp:288,serializePMem] Using ZSTD format generate checkpoint[0m
-[1;34m[src/checkpoint/serializer.cpp:291,serializePMem] Opening /home/data/wanli/Cmodel_projects/xiangshan-correlation/checkpoints/coremark-linux-20m/checkpoint/coremark/117/_117_0.127119_memory_.zstd as memory output file[0m
+[1;34m[src/checkpoint/serializer.cpp:291,serializePMem] Opening $CMODEL_ROOT/checkpoints/coremark-linux-20m/checkpoint/coremark/117/_117_0.127119_memory_.zstd as memory output file[0m
 [1;34m[src/checkpoint/serializer.cpp:327,serializePMem] pmem compress success, compress size 9990085[0m
 [1;34m[src/checkpoint/serializer.cpp:372,serializePMem] Checkpoint done!
 [0m
@@ -1022,7 +1022,7 @@ For help, type "help"
 [1;34m[src/checkpoint/serializer.cpp:615,notify_taken] simpoint2Weights size: 1[0m
 [1;34m[src/checkpoint/serializer.cpp:659,try_take_cpt] return true[0m
 [1;34m[src/cpu/cpu-exec.c:408,per_bb_profile] Have taken checkpoint on pc 0x2aaac51da4[0m
-[1;34m[/home/data/wanli/Cmodel_projects/xiangshan-correlation/NEMU-cpt/src/isa/riscv64/include/../instr/special.h:38,execute] nemu_trap case 0[0m
+[1;34m[$CMODEL_ROOT/NEMU-cpt/src/isa/riscv64/include/../instr/special.h:38,execute] nemu_trap case 0[0m
 [1;34m[src/cpu/cpu-exec.c:1034,cpu_exec] nemu: [1;32mHIT GOOD TRAP[0m at pc = 0x0000002ae5f6578c[0m
 [1;34m[src/cpu/cpu-exec.c:1040,cpu_exec] trap code:0[0m
 [1;34m[src/cpu/cpu-exec.c:172,monitor_statistic] host time spent = 72,028,534 us[0m

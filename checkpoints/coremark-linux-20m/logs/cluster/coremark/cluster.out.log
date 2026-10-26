@@ -1,6 +1,6 @@
-Command-line: "/home/data/wanli/Cmodel_projects/xiangshan-correlation/NEMU-cpt/resource/simpoint/simpoint_repo/bin/simpoint -loadFVFile /home/data/wanli/Cmodel_projects/xiangshan-correlation/checkpoints/coremark-linux-20m/profiling/coremark/simpoint_bbv.gz -saveSimpoints /home/data/wanli/Cmodel_projects/xiangshan-correlation/checkpoints/coremark-linux-20m/cluster/coremark/simpoints0 -saveSimpointWeights /home/data/wanli/Cmodel_projects/xiangshan-correlation/checkpoints/coremark-linux-20m/cluster/coremark/weights0 -inputVectorsGzipped -maxK 30 -numInitSeeds 2 -iters 1000 -seedkm 171236 -seedproj 193132"
+Command-line: "$CMODEL_ROOT/NEMU-cpt/resource/simpoint/simpoint_repo/bin/simpoint -loadFVFile $CMODEL_ROOT/checkpoints/coremark-linux-20m/profiling/coremark/simpoint_bbv.gz -saveSimpoints $CMODEL_ROOT/checkpoints/coremark-linux-20m/cluster/coremark/simpoints0 -saveSimpointWeights $CMODEL_ROOT/checkpoints/coremark-linux-20m/cluster/coremark/weights0 -inputVectorsGzipped -maxK 30 -numInitSeeds 2 -iters 1000 -seedkm 171236 -seedproj 193132"
 Using these options (*** indicates user-specified option):
-*** -loadFVFile : /home/data/wanli/Cmodel_projects/xiangshan-correlation/checkpoints/coremark-linux-20m/profiling/coremark/simpoint_bbv.gz
+*** -loadFVFile : $CMODEL_ROOT/checkpoints/coremark-linux-20m/profiling/coremark/simpoint_bbv.gz
     -k : search
 *** -iters : 1000
     -dim : 15
@@ -11,8 +11,8 @@ Using these options (*** indicates user-specified option):
     -saveAll : false
     -initkm : samp
     -saveLabels : 
-*** -saveSimpoints : /home/data/wanli/Cmodel_projects/xiangshan-correlation/checkpoints/coremark-linux-20m/cluster/coremark/simpoints0
-*** -saveSimpointWeights : /home/data/wanli/Cmodel_projects/xiangshan-correlation/checkpoints/coremark-linux-20m/cluster/coremark/weights0
+*** -saveSimpoints : $CMODEL_ROOT/checkpoints/coremark-linux-20m/cluster/coremark/simpoints0
+*** -saveSimpointWeights : $CMODEL_ROOT/checkpoints/coremark-linux-20m/cluster/coremark/weights0
     -saveVectorWeights : 
     -saveInitCtrs : 
     -saveFinalCtrs : 
@@ -37,7 +37,7 @@ Using these options (*** indicates user-specified option):
     -seedsample : 385089224
     -verbose : 0
 -------------------------------------------------------------
-  Loading data from frequency vector file '/home/data/wanli/Cmodel_projects/xiangshan-correlation/checkpoints/coremark-linux-20m/profiling/coremark/simpoint_bbv.gz' (size: 118x8918)
+  Loading data from frequency vector file '$CMODEL_ROOT/checkpoints/coremark-linux-20m/profiling/coremark/simpoint_bbv.gz' (size: 118x8918)
   Created random projection matrix (size: 8918x15)
   Loaded and projected frequency vector file
   Applying fixed-length vector weights (uniform weights)
@@ -225,5 +225,5 @@ Post-processing runs
 ------------------------------------------------------------------
   For the BIC threshold, the best clustering was run 5 (k = 11)
   Post-processing run 5 (k = 11)
-    Saving simpoints of all non-empty clusters to file '/home/data/wanli/Cmodel_projects/xiangshan-correlation/checkpoints/coremark-linux-20m/cluster/coremark/simpoints0'
-    Saving weights of all non-empty clusters to file '/home/data/wanli/Cmodel_projects/xiangshan-correlation/checkpoints/coremark-linux-20m/cluster/coremark/weights0'
+    Saving simpoints of all non-empty clusters to file '$CMODEL_ROOT/checkpoints/coremark-linux-20m/cluster/coremark/simpoints0'
+    Saving weights of all non-empty clusters to file '$CMODEL_ROOT/checkpoints/coremark-linux-20m/cluster/coremark/weights0'
