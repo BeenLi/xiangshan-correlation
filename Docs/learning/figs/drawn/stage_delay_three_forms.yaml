@@ -1,0 +1,34 @@
+title: "两级之间隔几拍：RTL 的两种寄存器写法与 gem5 的 TimeBuffer"
+# RTL 带握手：utility/PipelineConnect.scala:108-117（valid 寄存器、leftFire、RegEnable 数据、flush 清 valid、left.ready := right.ready），
+#   用例 CtrlBlock.scala:578 decode→rename；IFU.scala:291-298 的 f1_valid / f1_ftq_req / f1_ready 同理。
+# RTL 纯延迟：utility/Hold.scala:102 DelayN，用例 Frontend.scala:120 DelayN(io.tlbCsr, 2)。
+# gem5：cpu/timebuf.hh:179-188 advance、:232 getWire；fetch.cc:413 写 getWire(0)，decode.cc:216 读 getWire(-fetchToDecodeDelay)；
+#   反压 decode.cc:283 decodeBlock → fetch.cc:397、1567 读 getWire(-decodeToFetchDelay)；skidBuffer 容量 decode.cc:86。
+stages:
+  - {id: U, sub: "上游级"}
+  - {id: M, sub: "级间"}
+  - {id: D, sub: "下游级"}
+lanes:
+  - {id: hs, name: "RTL 带握手"}
+  - {id: dl, name: "RTL 纯延迟"}
+  - {id: g5, name: "gem5"}
+nodes:
+  - {id: h_up, type: block, label: "decode.io.out", stage: U, lane: hs}
+  - {id: h_reg, type: reg, label: "valid + data\n(PipelineConnect)", stage: M, lane: hs, hl: true}
+  - {id: h_dn, type: block, label: "rename.io.in", stage: D, lane: hs}
+  - {id: d_up, type: block, label: "io.tlbCsr", stage: U, lane: dl}
+  - {id: d_reg, type: reg, label: "DelayN(·, 2)", stage: M, lane: dl}
+  - {id: d_dn, type: block, label: "前端用的 tlbCsr", stage: D, lane: dl}
+  - {id: g_up, type: block, label: "fetch\n写 getWire(0)", stage: U, lane: g5}
+  - {id: g_tb, type: fifo, label: "TimeBuffer\n每拍 advance()", stage: M, lane: g5}
+  - {id: g_dn, type: block, label: "decode\n读 getWire(-2)\n+ skidBuffer", stage: D, lane: g5, hl: true}
+edges:
+  - "h_up -> h_reg : leftFire 时写入"
+  - "h_reg -> h_dn"
+  - "h_dn ~> h_up : ready（当拍）| fb"
+  - "d_up -> d_reg"
+  - "d_reg -> d_dn : 2 拍后"
+  - "g_up -> g_tb"
+  - "g_tb -> g_dn : 2 拍后"
+  - "g_dn ~> g_up : decodeBlock（隔 decodeToFetchDelay 拍）| fb hl"
+legend: {reg: 寄存器, fb: 反压, hl: 反压方式不同}

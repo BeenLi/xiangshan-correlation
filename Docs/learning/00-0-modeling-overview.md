@@ -44,7 +44,7 @@ RTL 和 gem5 描述的是同一条流水线，但写法不同。
 
 | 篇 | 内容 | 主要结论 |
 | --- | --- | --- |
-| 00-1 两级之间隔几拍（待写） | 级间寄存器对 TimeBuffer | |
+| [00-1 两级之间隔几拍](00-1-stage-latency.md) | 带握手的级间寄存器、`DelayN`、SRAM 自带的一拍，对 TimeBuffer | `delay = N` 等价于 `DelayN(·, N)`；反压和冲刷要另外建模，gem5 用 skid buffer 加往回走的阻塞信号近似 ✅ |
 | 00-2 一拍之内谁先谁后（待写） | 组合逻辑与握手对 tick 顺序与事件优先级 | |
 | 00-3 冲刷与推翻（待写） | flush / redirect 与先写后改对 squash 与补空泡 | |
 | 00-4 参数从哪来（待写） | Config 叠加对 Python 配置链 | |
