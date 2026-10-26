@@ -217,7 +217,7 @@ minjie-playground  https://github.com/OpenXiangShan/minjie-playground.git  maste
 
 gem5_data_proc  https://github.com/OpenXiangShan/gem5_data_proc.git  graphmaker  80316cedb2f17b05a692b729e4af2e340c01b986
 
-checkpoints/restorers/LibCheckpointAlpha-gem5-kmhv2  /home/data/wanli/Cmodel_projects/xiangshan-correlation/workload-builder/bootloader/LibCheckpointAlpha  gem5-kmhv2  5b2b8911adcd0cb8c862be43b734f3c47f1f9f21
+checkpoints/restorers/LibCheckpointAlpha-gem5-kmhv2  workload-builder/bootloader/LibCheckpointAlpha  gem5-kmhv2  5b2b8911adcd0cb8c862be43b734f3c47f1f9f21
 
 # 本地提交（基线之后）
 GEM5-XS  基线 KMH-V2 d11fc1cb558ebf1565c9f29e3c0df379ce8842ad
