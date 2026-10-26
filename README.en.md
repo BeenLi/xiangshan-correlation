@@ -95,7 +95,7 @@ An EMU built without DRAMsim3 uses fixed-latency memory and can't be used for co
 ## Usage
 
 ```bash
-source /home/data/wanli/Cmodel_projects/xiangshan-correlation/scripts/env_kmhv2.sh
+source scripts/env_kmhv2.sh   # run from the repository root
 ```
 
 Build GEM5:
@@ -107,8 +107,8 @@ cd $gem5_home && $CMODEL_ROOT/scripts/build_gem5_kmhv2.sh 2>&1 | tee build.log
 Build the NEMU reference model:
 
 ```bash
-export PATH=/home/data/wanli/.local/deps/nemu-tools/root/usr/bin:$PATH
-export BISON_PKGDATADIR=/home/data/wanli/.local/deps/nemu-tools/root/usr/share/bison
+export PATH=~/.local/deps/nemu-tools/root/usr/bin:$PATH
+export BISON_PKGDATADIR=~/.local/deps/nemu-tools/root/usr/share/bison
 cd $NEMU_HOME && make riscv64-gem5-ref_defconfig && make -j48
 ```
 
