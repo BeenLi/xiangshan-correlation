@@ -60,7 +60,7 @@ Boot HART Debug Triggers    : 0 triggers
 Boot HART MIDELEG           : 0x0000000000003666
 Boot HART MEDELEG           : 0x0000000000f4b509
 [    0.000000] Booting Linux on hartid 0
-[    0.000000] Linux version 7.1.13 (wanli@ubuntu-CS5280H2) (riscv64-linux-gcc.br_real (Buildroot 2021.11-18033-g83947c7bb6) 15.1.0, GNU ld (GNU Binutils) 2.44) #3 SMP PREEMPT Thu Sep 24 09:46:06 CST 2026
+[    0.000000] Linux version 7.1.13 (user@host) (riscv64-linux-gcc.br_real (Buildroot 2021.11-18033-g83947c7bb6) 15.1.0, GNU ld (GNU Binutils) 2.44) #3 SMP PREEMPT Thu Sep 24 09:46:06 CST 2026
 [    0.000000] random: crng init done
 [    0.000000] Machine model: freechips,rocketchip-unknown
 [    0.000000] SBI specification v3.0 detected
@@ -147,41 +147,77 @@ Boot HART MEDELEG           : 0x0000000000f4b509
 [    0.099787] io scheduler mq-deadline registered
 [    0.099862] io scheduler kyber registered
 [    0.111840] riscv-plic: plic@3c000000: mapped 65 interrupts with 1 handlers for 2 contexts.
-[    0.122429] printk: legacy console [hvc0] enabled
 [    0.122429] printk: legacy console [hvc0] enabled
-[    0.122599] printk: legacy bootconsole [sbi0] disabled
+
+[    0.122429] printk: legacy console [hvc0] enabled
 [    0.122599] printk: legacy bootconsole [sbi0] disabled
-[    0.124324] cpu0: rdtime lacks granularity needed to measure vector unaligned access speed
-[    0.125050] Serial: 8250/16550 driver, 4 ports, IRQ sharing disabled
-[    0.135632] 40600000.serial: ttyUL0 at MMIO 0x40600000 (irq = 12, base_baud = 0) is a uartlite
-[    0.142103] i2c_dev: i2c /dev entries driver
-[    0.142647] riscv-pmu-sbi: SBI PMU extension is available
-[    0.142819] riscv-pmu-sbi: 16 firmware and 2 hardware counters
-[    0.142943] riscv-pmu-sbi: Perf sampling/filtering is not supported as sscof extension is not available
-[    0.149467] NET: Registered PF_INET6 protocol family
-[    0.154217] Segment Routing with IPv6
-[    0.154443] In-situ OAM (IOAM) with IPv6
-[    0.155947] sit: IPv6, IPv4 and MPLS over IPv4 tunneling driver
-[    0.160959] NET: Registered PF_PACKET protocol family
-[    0.304793] clk: Disabling unused clocks
-[    0.358198] Unpacking initramfs...
-[    0.359777] Freeing initrd memory: 24K
-[    0.388462] Freeing unused kernel image (initmem) memory: 11152K
-[    0.388651] Run /init as init process
-2K performance run parameters for coremark.
-CoreMark Size    : 666
-Total ticks      : 15587
-Total time (secs): 15.587000
-Iterations/Sec   : 384.936165
-Iterations       : 6000
-Compiler version : GCC15.1.0
-Compiler flags   : -O2   -lrt
-Memory location  : Please put data memory location here
-			(e.g. code in flash, data on heap etc)
-seedcrc          : 0xe9f5
-[0]crclist       : 0xe714
-[0]crcmatrix     : 0x1fd7
-[0]crcstate      : 0x8e3a
-[0]crcfinal      : 0xa14c
-Correct operation validated. See readme.txt for run and reporting rules.
-CoreMark 1.0 : 384.936165 / GCC15.1.0 -O2   -lrt / Heap
+
+[    0.122599] printk: legacy bootconsole [sbi0] disabled
+[    0.124324] cpu0: rdtime lacks granularity needed to measure vector unaligned access speed
+
+[    0.125050] Serial: 8250/16550 driver, 4 ports, IRQ sharing disabled
+
+[    0.135632] 40600000.serial: ttyUL0 at MMIO 0x40600000 (irq = 12, base_baud = 0) is a uartlite
+
+[    0.142103] i2c_dev: i2c /dev entries driver
+
+[    0.142647] riscv-pmu-sbi: SBI PMU extension is available
+
+[    0.142819] riscv-pmu-sbi: 16 firmware and 2 hardware counters
+
+[    0.142943] riscv-pmu-sbi: Perf sampling/filtering is not supported as sscof extension is not available
+
+[    0.149467] NET: Registered PF_INET6 protocol family
+
+[    0.154217] Segment Routing with IPv6
+
+[    0.154443] In-situ OAM (IOAM) with IPv6
+
+[    0.155947] sit: IPv6, IPv4 and MPLS over IPv4 tunneling driver
+
+[    0.160959] NET: Registered PF_PACKET protocol family
+
+[    0.304793] clk: Disabling unused clocks
+
+[    0.358198] Unpacking initramfs...
+
+[    0.359777] Freeing initrd memory: 24K
+
+[    0.388462] Freeing unused kernel image (initmem) memory: 11152K
+
+[    0.388651] Run /init as init process
+
+2K performance run parameters for coremark.
+
+CoreMark Size    : 666
+
+Total ticks      : 15587
+
+Total time (secs): 15.587000
+
+Iterations/Sec   : 384.936165
+
+Iterations       : 6000
+
+Compiler version : GCC15.1.0
+
+Compiler flags   : -O2   -lrt
+
+Memory location  : Please put data memory location here
+
+			(e.g. code in flash, data on heap etc)
+
+seedcrc          : 0xe9f5
+
+[0]crclist       : 0xe714
+
+[0]crcmatrix     : 0x1fd7
+
+[0]crcstate      : 0x8e3a
+
+[0]crcfinal      : 0xa14c
+
+Correct operation validated. See readme.txt for run and reporting rules.
+
+CoreMark 1.0 : 384.936165 / GCC15.1.0 -O2   -lrt / Heap
+
