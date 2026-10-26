@@ -8,4 +8,4 @@ export GCB_RESTORER=""   # not needed for --raw-cpt; set to gcpt.bin before runn
 # XiangShan RTL EMU (kunminghu-v2) toolchain
 export NOOP_HOME=$CMODEL_ROOT/XiangShan
 export DRAMSIM3_HOME=$CMODEL_ROOT/DRAMsim3          # OpenXiangShan/DRAMsim3, built with -D COSIM=1
-export PATH=/home/data/wanli/.local/verilator-5.050/bin:/home/data/wanli/.local/mill-0.12.3/bin:$PATH
+export PATH=$HOME/.local/verilator-5.050/bin:$HOME/.local/mill-0.12.3/bin:$PATH
