@@ -95,7 +95,7 @@ V2 RTL 在 GEM5 标签之后，有几处改动可能影响对比：
 ## 使用方法
 
 ```bash
-source /home/data/wanli/Cmodel_projects/xiangshan-correlation/scripts/env_kmhv2.sh
+source scripts/env_kmhv2.sh   # 在仓库根目录执行
 ```
 
 编译 GEM5：
@@ -107,8 +107,8 @@ cd $gem5_home && $CMODEL_ROOT/scripts/build_gem5_kmhv2.sh 2>&1 | tee build.log
 编译 NEMU 参考模型：
 
 ```bash
-export PATH=/home/data/wanli/.local/deps/nemu-tools/root/usr/bin:$PATH
-export BISON_PKGDATADIR=/home/data/wanli/.local/deps/nemu-tools/root/usr/share/bison
+export PATH=~/.local/deps/nemu-tools/root/usr/bin:$PATH
+export BISON_PKGDATADIR=~/.local/deps/nemu-tools/root/usr/share/bison
 cd $NEMU_HOME && make riscv64-gem5-ref_defconfig && make -j48
 ```
 
