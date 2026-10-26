@@ -1,5 +1,7 @@
 # XiangShan Correlation
 
+**简体中文** | [English](README.en.md)
+
 XiangShan 昆明湖 V2 RTL 与 XS-GEM5 性能模型的 correlation 工作区。
 
 ## 目录结构
